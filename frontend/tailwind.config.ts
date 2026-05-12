@@ -9,23 +9,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#F5F5F7", // Very light gray like iOS background
-        surface: "#FFFFFF",
-        surfaceHover: "#F9F9FB",
-        primary: "#007AFF", // Apple System Blue
-        secondary: "#34C759", // Apple System Green
-        accent: "#FF3B30", // Apple System Red
-        border: "rgba(0, 0, 0, 0.08)",
-        textMain: "#1C1C1E", // Dark gray for text
-        textMuted: "#8E8E93", // Muted gray text
+        background: "#000000",
+        surface: "#0A0A0A",
+        surfaceHover: "#111111",
+        primary: "#3B82F6", // Electric Blue
+        secondary: "#8B5CF6", // Purple
+        accent: "#10B981", // Emerald Green for success
+        border: "rgba(255, 255, 255, 0.1)",
+        textMain: "#EDEDED",
+        textMuted: "#A1A1AA",
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-glow": "linear-gradient(135deg, #3B82F6, #8B5CF6)",
       },
       boxShadow: {
-        'apple': '0 4px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
-        'apple-hover': '0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)',
+        'glow-primary': '0 0 40px -10px rgba(59, 130, 246, 0.3)',
+        'glow-secondary': '0 0 40px -10px rgba(139, 92, 246, 0.3)',
       },
       animation: {
-        "spin-slow": "spin 3s linear infinite",
-        "pulse-soft": "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "spin-slow": "spin 4s linear infinite",
+        "pulse-glow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       }
     },
   },

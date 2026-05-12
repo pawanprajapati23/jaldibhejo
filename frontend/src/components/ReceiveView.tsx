@@ -16,7 +16,7 @@ export function ReceiveView() {
 
   return (
     <div className="glass-panel w-full p-8 md:p-12 text-center flex flex-col items-center justify-center min-h-[450px] relative overflow-hidden">
-      <div className="w-20 h-20 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary mb-8 shadow-sm">
+      <div className="w-20 h-20 rounded-2xl bg-surface border border-border flex items-center justify-center text-secondary mb-8 shadow-glow-secondary">
         <KeyRound size={40} strokeWidth={2} />
       </div>
       
@@ -29,14 +29,14 @@ export function ReceiveView() {
           maxLength={6}
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
-          className="w-full text-center text-4xl tracking-[0.4em] font-mono bg-white border border-black/10 rounded-2xl py-5 mb-6 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all shadow-sm text-textMain placeholder-black/20"
+          className="w-full text-center text-4xl tracking-[0.4em] font-mono bg-surface border border-border rounded-xl py-5 mb-6 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all shadow-inner text-textMain placeholder-textMuted/30"
           placeholder="000000"
           autoFocus
         />
         <button
           type="submit"
           disabled={pin.length !== 6}
-          className="w-full py-4 bg-primary text-white font-bold text-[17px] rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.98]"
+          className="w-full py-4 bg-secondary text-white font-bold text-[17px] rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:bg-secondary/90 hover:shadow-glow-secondary active:scale-[0.98]"
         >
           Connect Device
         </button>
