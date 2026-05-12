@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { useTransferStore } from '../store/useTransferStore';
+import JSZip from 'jszip';
 
 const CHUNK_SIZE = 64 * 1024; // 64 KB
 const BUFFER_THRESHOLD = 1024 * 1024 * 5; // 5 MB
