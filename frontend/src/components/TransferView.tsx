@@ -38,6 +38,14 @@ export function TransferView() {
   const fileToDisplay = role === "sender" ? files[0] : incomingFile;
   const isTextMode = !!textPayload || !!incomingText;
 
+  const [joinUrl, setJoinUrl] = useState("");
+
+  useEffect(() => {
+    if (roomId && typeof window !== 'undefined') {
+      setJoinUrl(`${window.location.origin}?pin=${roomId}`);
+    }
+  }, [roomId]);
+
   return (
     <div className="glass-panel w-full p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px]">
       {connectionState === "error" && (
@@ -53,10 +61,10 @@ export function TransferView() {
       {connectionState === "waiting" && role === "sender" && (
         <div className="text-center w-full max-w-sm">
           <h2 className="text-2xl font-bold mb-2 text-textMain">Ready to Send {isTextMode ? "Text" : "Files"}</h2>
-          <p className="text-textMuted mb-8 text-sm">Share this PIN or scan the QR code</p>
+          <p className="text-textMuted mb-8 text-sm">Share this PIN or scan the QR code to auto-download</p>
           
           <div className="bg-white p-4 rounded-2xl mb-8 inline-block">
-            <QRCodeSVG value={roomId || ""} size={180} fgColor="#000000" bgColor="transparent" />
+            <QRCodeSVG value={joinUrl || roomId || ""} size={180} fgColor="#000000" bgColor="transparent" />
           </div>
           
           <div className="text-5xl tracking-[0.2em] font-mono font-bold text-primary mb-8">

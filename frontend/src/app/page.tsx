@@ -16,6 +16,24 @@ export default function Home() {
   useEffect(() => {
     if (mode === "idle") {
       webrtcEngine.disconnect();
+
+      // Auto-join if opened via QR code link
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const pin = params.get("pin");
+        if (pin && pin.length === 6) {
+          useTransferStore.getState().setMode("receive");
+          useTransferStore.getState().setRole("receiver");
+          
+          // Clean URL so it doesn't trigger again on refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          setTimeout(() => {
+            webrtcEngine.connect();
+            webrtcEngine.joinRoom(pin);
+          }, 300);
+        }
+      }
     }
     return () => {
       // Don't disconnect on unmount if we're just hot-reloading in dev, 
