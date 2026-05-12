@@ -41,6 +41,14 @@ export function TransferView() {
   const isVideo = fileToDisplay?.type?.startsWith("video/");
   const isAudio = fileToDisplay?.type?.startsWith("audio/");
 
+  const [joinUrl, setJoinUrl] = useState("");
+
+  useEffect(() => {
+    if (roomId && typeof window !== 'undefined') {
+      setJoinUrl(`${window.location.origin}?pin=${roomId}`);
+    }
+  }, [roomId]);
+
   return (
     <div className="glass-panel w-full p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px]">
       {connectionState === "error" && (
