@@ -193,11 +193,14 @@ export class WebRTCEngine {
           this.expectedSize = msg.size;
           this.receivedSize = 0;
           this.receivedBuffers = [];
-          useTransferStore.getState().setIncomingFile({ name: msg.name, size: msg.size, type: msg.fileType });
+          useTransferStore.getState().setIncomingFile({ name: msg.name, size: msg.size, type: msg.fileType, isZip: msg.isZip });
           useTransferStore.getState().setConnectionState('transferring');
           this.startSpeedCalculation();
         } else if (msg.type === 'eof') {
           this.finishDownload();
+        } else if (msg.type === 'text') {
+          useTransferStore.getState().setIncomingText(msg.content);
+          useTransferStore.getState().setConnectionState('completed');
         }
       } else if (event.data instanceof ArrayBuffer) {
         this.receivedBuffers.push(event.data);
@@ -210,25 +213,51 @@ export class WebRTCEngine {
 
   private async startFileTransfer() {
     const state = useTransferStore.getState();
-    const file = state.files[0];
-    if (!file || !this.dataChannel) return;
+    const { textPayload, files } = state;
+    
+    if (!this.dataChannel) return;
+
+    if (textPayload) {
+      state.setConnectionState('transferring');
+      this.dataChannel.send(JSON.stringify({ type: 'text', content: textPayload }));
+      state.setConnectionState('completed');
+      return;
+    }
+
+    if (files.length === 0) return;
 
     state.setConnectionState('transferring');
     this.startSpeedCalculation();
 
+    let fileToTransfer: Blob | File;
+    let fileName = '';
+    let isZip = false;
+
+    if (files.length === 1) {
+      fileToTransfer = files[0];
+      fileName = files[0].name;
+    } else {
+      isZip = true;
+      fileName = 'JaldiBhejo_Files.zip';
+      const zip = new JSZip();
+      files.forEach(f => zip.file(f.name, f));
+      fileToTransfer = await zip.generateAsync({ type: 'blob' });
+    }
+
     // Send metadata
     this.dataChannel.send(JSON.stringify({
       type: 'metadata',
-      name: file.name,
-      size: file.size,
-      fileType: file.type,
+      name: fileName,
+      size: fileToTransfer.size,
+      fileType: isZip ? 'application/zip' : fileToTransfer.type,
+      isZip
     }));
 
     let offset = 0;
 
     const readSlice = (o: number): Promise<ArrayBuffer> => {
       return new Promise((resolve, reject) => {
-        const slice = file.slice(o, o + CHUNK_SIZE);
+        const slice = fileToTransfer.slice(o, o + CHUNK_SIZE);
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target!.result as ArrayBuffer);
         reader.onerror = reject;
@@ -236,7 +265,7 @@ export class WebRTCEngine {
       });
     };
 
-    while (offset < file.size) {
+    while (offset < fileToTransfer.size) {
       if (this.dataChannel.readyState !== 'open') {
         useTransferStore.getState().setError('Data channel closed unexpectedly');
         break;
@@ -255,9 +284,9 @@ export class WebRTCEngine {
       const chunk = await readSlice(offset);
       this.dataChannel.send(chunk);
       offset += chunk.byteLength;
-      this.receivedSize = offset; // for speed calculation sender side
+      this.receivedSize = offset;
 
-      const progress = Math.min(100, Math.round((offset / file.size) * 100));
+      const progress = Math.min(100, Math.round((offset / fileToTransfer.size) * 100));
       useTransferStore.getState().setProgress(progress);
     }
 

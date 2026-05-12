@@ -8,6 +8,7 @@ export interface FileMetadata {
   name: string;
   size: number;
   type: string;
+  isZip?: boolean;
 }
 
 interface TransferState {
@@ -16,7 +17,9 @@ interface TransferState {
   connectionState: ConnectionState;
   roomId: string | null;
   files: File[];
+  textPayload: string | null;
   incomingFile: FileMetadata | null;
+  incomingText: string | null;
   progress: number;
   transferSpeed: string;
   error: string | null;
@@ -26,7 +29,9 @@ interface TransferState {
   setConnectionState: (state: ConnectionState) => void;
   setRoomId: (id: string | null) => void;
   setFiles: (files: File[]) => void;
+  setTextPayload: (text: string | null) => void;
   setIncomingFile: (file: FileMetadata | null) => void;
+  setIncomingText: (text: string | null) => void;
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
   setError: (error: string | null) => void;
@@ -39,7 +44,9 @@ export const useTransferStore = create<TransferState>((set) => ({
   connectionState: 'disconnected',
   roomId: null,
   files: [],
+  textPayload: null,
   incomingFile: null,
+  incomingText: null,
   progress: 0,
   transferSpeed: '0 B/s',
   error: null,
@@ -49,7 +56,9 @@ export const useTransferStore = create<TransferState>((set) => ({
   setConnectionState: (connectionState) => set({ connectionState }),
   setRoomId: (roomId) => set({ roomId }),
   setFiles: (files) => set({ files }),
+  setTextPayload: (textPayload) => set({ textPayload }),
   setIncomingFile: (incomingFile) => set({ incomingFile }),
+  setIncomingText: (incomingText) => set({ incomingText }),
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
@@ -59,7 +68,9 @@ export const useTransferStore = create<TransferState>((set) => ({
     connectionState: 'disconnected',
     roomId: null,
     files: [],
+    textPayload: null,
     incomingFile: null,
+    incomingText: null,
     progress: 0,
     transferSpeed: '0 B/s',
     error: null,
