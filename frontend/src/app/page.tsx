@@ -23,7 +23,7 @@ export default function Home() {
     };
   }, [mode]);
 
-  const springTransition = { type: "spring", stiffness: 300, damping: 30 };
+  const springTransition = { type: "spring" as const, stiffness: 300, damping: 30 };
 
   return (
     <div className="w-full max-w-3xl mx-auto relative perspective-1000">
