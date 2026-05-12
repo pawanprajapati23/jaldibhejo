@@ -5,21 +5,20 @@ export function IdleView() {
   const { setMode, setRole } = useTransferStore();
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 justify-center items-center w-full mt-10">
+    <div className="flex flex-col md:flex-row gap-6 justify-center items-center w-full mt-8">
       <button
         onClick={() => {
           setMode("send");
           setRole("sender");
         }}
-        className="glass-panel relative overflow-hidden w-full md:w-72 h-72 flex flex-col items-center justify-center gap-6 transition-all hover:-translate-y-2 group"
+        className="glass-panel w-full md:w-64 h-64 flex flex-col items-center justify-center gap-5 group"
       >
-        <div className="absolute inset-0 bg-gradient-glow opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
-        <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all duration-300">
-          <Upload size={36} strokeWidth={2} />
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 group-hover:bg-primary/15 transition-all duration-300">
+          <Upload size={32} strokeWidth={2.5} />
         </div>
         <div>
-          <h2 className="text-3xl font-bold mb-2 text-white group-hover:text-primary transition-colors">Send Files</h2>
-          <p className="text-sm text-white/50 group-hover:text-white/70">Share via PIN or QR</p>
+          <h2 className="text-2xl font-semibold mb-1 text-textMain">Send Files</h2>
+          <p className="text-sm text-textMuted font-medium">Share via PIN or QR</p>
         </div>
       </button>
 
@@ -28,15 +27,14 @@ export function IdleView() {
           setMode("receive");
           setRole("receiver");
         }}
-        className="glass-panel relative overflow-hidden w-full md:w-72 h-72 flex flex-col items-center justify-center gap-6 transition-all hover:-translate-y-2 group"
+        className="glass-panel w-full md:w-64 h-64 flex flex-col items-center justify-center gap-5 group"
       >
-        <div className="absolute inset-0 bg-gradient-glow opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
-        <div className="w-20 h-20 rounded-2xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary group-hover:scale-110 group-hover:bg-secondary/20 group-hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-all duration-300">
-          <Download size={36} strokeWidth={2} />
+        <div className="w-20 h-20 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-105 group-hover:bg-secondary/15 transition-all duration-300">
+          <Download size={32} strokeWidth={2.5} />
         </div>
         <div>
-          <h2 className="text-3xl font-bold mb-2 text-white group-hover:text-secondary transition-colors">Receive</h2>
-          <p className="text-sm text-white/50 group-hover:text-white/70">Enter PIN to connect</p>
+          <h2 className="text-2xl font-semibold mb-1 text-textMain">Receive</h2>
+          <p className="text-sm text-textMuted font-medium">Enter PIN to connect</p>
         </div>
       </button>
     </div>

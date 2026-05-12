@@ -9,35 +9,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#030305",
-        surface: "rgba(255, 255, 255, 0.02)",
-        surfaceHover: "rgba(255, 255, 255, 0.04)",
-        primary: "#A855F7", // Richer Purple
-        secondary: "#22D3EE", // Brighter Cyan
-        accent: "#F43F5E", // Fuchsia accent
-        border: "rgba(255, 255, 255, 0.08)",
+        background: "#F5F5F7", // Very light gray like iOS background
+        surface: "#FFFFFF",
+        surfaceHover: "#F9F9FB",
+        primary: "#007AFF", // Apple System Blue
+        secondary: "#34C759", // Apple System Green
+        accent: "#FF3B30", // Apple System Red
+        border: "rgba(0, 0, 0, 0.08)",
+        textMain: "#1C1C1E", // Dark gray for text
+        textMuted: "#8E8E93", // Muted gray text
       },
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-glow": "linear-gradient(135deg, #A855F7, #22D3EE)",
-        "gradient-mesh": "radial-gradient(at 40% 20%, hsla(271,70%,40%,0.15) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(189,100%,40%,0.15) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(343,100%,40%,0.1) 0px, transparent 50%)",
+      boxShadow: {
+        'apple': '0 4px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02)',
+        'apple-hover': '0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)',
       },
       animation: {
-        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "float": "float 6s ease-in-out infinite",
-        "float-delayed": "float 6s ease-in-out 3s infinite",
-        "spin-slow": "spin 8s linear infinite",
-        "glow": "glow 2s ease-in-out infinite alternate",
-      },
-      keyframes: {
-        float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-15px)" },
-        },
-        glow: {
-          "0%": { boxShadow: "0 0 15px rgba(168, 85, 247, 0.2)" },
-          "100%": { boxShadow: "0 0 25px rgba(34, 211, 238, 0.4)" }
-        }
+        "spin-slow": "spin 3s linear infinite",
+        "pulse-soft": "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       }
     },
   },
