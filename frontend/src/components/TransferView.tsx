@@ -38,8 +38,6 @@ export function TransferView() {
 
   const fileToDisplay = role === "sender" ? files[0] : incomingFile;
   const isTextMode = !!textPayload || !!incomingText;
-  const isVideo = fileToDisplay?.type?.startsWith("video/");
-  const isAudio = fileToDisplay?.type?.startsWith("audio/");
 
   const [joinUrl, setJoinUrl] = useState("");
 
@@ -101,18 +99,6 @@ export function TransferView() {
                 <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             </div>
-          )}
-
-          {/* Live Media Streaming Player */}
-          {role === "receiver" && mediaStreamUrl && (isVideo || isAudio) && (
-             <div className="w-full mb-8 overflow-hidden rounded-xl border border-border bg-black">
-               {isVideo ? (
-                 <video src={mediaStreamUrl} controls autoPlay className="w-full h-auto max-h-[300px] object-contain bg-black" />
-               ) : (
-                 <audio src={mediaStreamUrl} controls autoPlay className="w-full" />
-               )}
-               <p className="text-xs text-primary mt-2 mb-2">Live Streaming Active</p>
-             </div>
           )}
 
           {isTextMode && (
