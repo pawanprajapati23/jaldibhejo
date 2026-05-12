@@ -20,6 +20,7 @@ interface TransferState {
   textPayload: string | null;
   incomingFile: FileMetadata | null;
   incomingText: string | null;
+  mediaStreamUrl: string | null;
   progress: number;
   transferSpeed: string;
   error: string | null;
@@ -32,6 +33,7 @@ interface TransferState {
   setTextPayload: (text: string | null) => void;
   setIncomingFile: (file: FileMetadata | null) => void;
   setIncomingText: (text: string | null) => void;
+  setMediaStreamUrl: (url: string | null) => void;
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
   setError: (error: string | null) => void;
@@ -47,6 +49,7 @@ export const useTransferStore = create<TransferState>((set) => ({
   textPayload: null,
   incomingFile: null,
   incomingText: null,
+  mediaStreamUrl: null,
   progress: 0,
   transferSpeed: '0 B/s',
   error: null,
@@ -59,6 +62,7 @@ export const useTransferStore = create<TransferState>((set) => ({
   setTextPayload: (textPayload) => set({ textPayload }),
   setIncomingFile: (incomingFile) => set({ incomingFile }),
   setIncomingText: (incomingText) => set({ incomingText }),
+  setMediaStreamUrl: (mediaStreamUrl) => set({ mediaStreamUrl }),
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
@@ -71,6 +75,7 @@ export const useTransferStore = create<TransferState>((set) => ({
     textPayload: null,
     incomingFile: null,
     incomingText: null,
+    mediaStreamUrl: null,
     progress: 0,
     transferSpeed: '0 B/s',
     error: null,

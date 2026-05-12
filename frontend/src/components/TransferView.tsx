@@ -12,6 +12,7 @@ export function TransferView() {
     incomingFile,
     textPayload,
     incomingText,
+    mediaStreamUrl,
     progress, 
     transferSpeed, 
     error 
@@ -37,14 +38,8 @@ export function TransferView() {
 
   const fileToDisplay = role === "sender" ? files[0] : incomingFile;
   const isTextMode = !!textPayload || !!incomingText;
-
-  const [joinUrl, setJoinUrl] = useState("");
-
-  useEffect(() => {
-    if (roomId && typeof window !== 'undefined') {
-      setJoinUrl(`${window.location.origin}?pin=${roomId}`);
-    }
-  }, [roomId]);
+  const isVideo = fileToDisplay?.type?.startsWith("video/");
+  const isAudio = fileToDisplay?.type?.startsWith("audio/");
 
   return (
     <div className="glass-panel w-full p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px]">
@@ -98,6 +93,18 @@ export function TransferView() {
                 <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             </div>
+          )}
+
+          {/* Live Media Streaming Player */}
+          {role === "receiver" && mediaStreamUrl && (isVideo || isAudio) && (
+             <div className="w-full mb-8 overflow-hidden rounded-xl border border-border bg-black">
+               {isVideo ? (
+                 <video src={mediaStreamUrl} controls autoPlay className="w-full h-auto max-h-[300px] object-contain bg-black" />
+               ) : (
+                 <audio src={mediaStreamUrl} controls autoPlay className="w-full" />
+               )}
+               <p className="text-xs text-primary mt-2 mb-2">Live Streaming Active</p>
+             </div>
           )}
 
           {isTextMode && (

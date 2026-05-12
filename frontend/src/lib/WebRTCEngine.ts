@@ -38,6 +38,11 @@ export class WebRTCEngine {
     this.socket.disconnect();
   }
 
+  private mediaSource: MediaSource | null = null;
+  private sourceBuffer: SourceBuffer | null = null;
+  private chunkQueue: ArrayBuffer[] = [];
+  private isAppending = false;
+
   private processIceBuffer() {
     if (this.peerConnection && this.peerConnection.remoteDescription) {
       while (this.iceCandidateBuffer.length > 0) {
@@ -194,11 +199,56 @@ export class WebRTCEngine {
           this.expectedSize = msg.size;
           this.receivedSize = 0;
           this.receivedBuffers = [];
+          this.chunkQueue = [];
+          this.isAppending = false;
+
           useTransferStore.getState().setIncomingFile({ name: msg.name, size: msg.size, type: msg.fileType, isZip: msg.isZip });
           useTransferStore.getState().setConnectionState('transferring');
           this.startSpeedCalculation();
+
+          // Check if file is streamable (video/mp4 for simple example)
+          // Note: Full format support depends on browser MediaSource capabilities. 
+          // We'll target mp4/webm/mp3 for demo purposes.
+          if ((msg.fileType.startsWith('video/') || msg.fileType.startsWith('audio/')) && window.MediaSource) {
+             this.mediaSource = new MediaSource();
+             const streamUrl = URL.createObjectURL(this.mediaSource);
+             useTransferStore.getState().setMediaStreamUrl(streamUrl);
+             
+             this.mediaSource.addEventListener('sourceopen', () => {
+                // Ideally, mime codec string should be dynamic based on the file. 
+                // Using a broad mp4 codec as a generic fallback for the demo.
+                let mimeCodec = msg.fileType;
+                if (msg.fileType === 'video/mp4') mimeCodec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+                else if (msg.fileType === 'audio/mpeg') mimeCodec = 'audio/mpeg';
+
+                try {
+                  if (MediaSource.isTypeSupported(mimeCodec)) {
+                    this.sourceBuffer = this.mediaSource!.addSourceBuffer(mimeCodec);
+                    this.sourceBuffer.addEventListener('updateend', () => this.processNextChunk());
+                  } else {
+                    console.warn(`MIME type or codec: ${mimeCodec} not supported for streaming.`);
+                    this.mediaSource = null;
+                  }
+                } catch (e) {
+                   console.error("SourceBuffer error:", e);
+                   this.mediaSource = null;
+                }
+             });
+          }
+
         } else if (msg.type === 'eof') {
-          this.finishDownload();
+          if (this.mediaSource && this.mediaSource.readyState === 'open') {
+             // Wait for all chunks to append before ending stream
+             const checkEnd = setInterval(() => {
+                if (!this.isAppending && this.chunkQueue.length === 0) {
+                   try { this.mediaSource!.endOfStream(); } catch(e){}
+                   clearInterval(checkEnd);
+                   this.finishDownload();
+                }
+             }, 100);
+          } else {
+             this.finishDownload();
+          }
         } else if (msg.type === 'text') {
           useTransferStore.getState().setIncomingText(msg.content);
           useTransferStore.getState().setConnectionState('completed');
@@ -208,8 +258,29 @@ export class WebRTCEngine {
         this.receivedSize += event.data.byteLength;
         const progress = Math.min(100, Math.round((this.receivedSize / this.expectedSize) * 100));
         useTransferStore.getState().setProgress(progress);
+
+        // If streaming is active, queue the chunk
+        if (this.mediaSource && this.sourceBuffer) {
+           this.chunkQueue.push(event.data);
+           this.processNextChunk();
+        }
       }
     };
+  }
+
+  private processNextChunk() {
+    if (this.sourceBuffer && !this.sourceBuffer.updating && this.chunkQueue.length > 0) {
+      this.isAppending = true;
+      try {
+        const chunk = this.chunkQueue.shift();
+        if (chunk) this.sourceBuffer.appendBuffer(chunk);
+      } catch (e) {
+        console.error("Failed to append buffer:", e);
+        this.isAppending = false;
+      }
+    } else {
+      this.isAppending = false;
+    }
   }
 
   private async startFileTransfer() {
