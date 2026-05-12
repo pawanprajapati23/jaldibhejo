@@ -23,16 +23,19 @@ export default function Home() {
     };
   }, [mode]);
 
+  const springTransition = { type: "spring", stiffness: 300, damping: 30 };
+
   return (
-    <div className="w-full max-w-2xl mx-auto relative">
+    <div className="w-full max-w-3xl mx-auto relative perspective-1000">
       <AnimatePresence mode="wait">
         {mode === "idle" && (
           <motion.div
             key="idle"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, scale: 0.9, rotateX: 10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+            exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
+            transition={springTransition}
+            className="w-full flex justify-center"
           >
             <IdleView />
           </motion.div>
@@ -41,10 +44,11 @@ export default function Home() {
         {mode === "send" && connectionState === "disconnected" && (
           <motion.div
             key="send"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -40, scale: 0.95, filter: "blur(10px)" }}
+            transition={springTransition}
+            className="w-full"
           >
             <SendView />
           </motion.div>
@@ -53,10 +57,11 @@ export default function Home() {
         {mode === "receive" && connectionState === "disconnected" && (
           <motion.div
             key="receive"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -40, scale: 0.95, filter: "blur(10px)" }}
+            transition={springTransition}
+            className="w-full"
           >
             <ReceiveView />
           </motion.div>
@@ -65,27 +70,30 @@ export default function Home() {
         {connectionState !== "disconnected" && (
           <motion.div
             key="transfer"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20, filter: "blur(10px)" }}
+            transition={springTransition}
+            className="w-full"
           >
             <TransferView />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Back button when not idle and not actively transferring (unless error/complete) */}
+      {/* Back button */}
       <AnimatePresence>
         {mode !== "idle" && (connectionState === "disconnected" || connectionState === "error" || connectionState === "completed") && (
           <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute -top-16 left-0 text-white/60 hover:text-white transition-colors flex items-center gap-2"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={springTransition}
+            className="absolute -top-16 left-4 lg:left-0 text-white/50 hover:text-white transition-colors flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md"
             onClick={reset}
           >
-            ← Back
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back
           </motion.button>
         )}
       </AnimatePresence>

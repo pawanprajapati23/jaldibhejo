@@ -9,27 +9,36 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#000000",
-        surface: "rgba(255, 255, 255, 0.03)",
-        surfaceHover: "rgba(255, 255, 255, 0.08)",
-        primary: "#38bdf8", // Water blue
-        secondary: "#818cf8", // Deep water purple
-        accent: "#2dd4bf", // Sea green
-        border: "rgba(255, 255, 255, 0.1)",
-        textMain: "#ffffff",
-        textMuted: "rgba(255, 255, 255, 0.5)",
-      },
-      backgroundImage: {
-        "gradient-glow": "linear-gradient(135deg, #38bdf8, #818cf8)",
-      },
-      boxShadow: {
-        'glow-primary': '0 0 50px -10px rgba(56, 189, 248, 0.4)',
-        'glow-secondary': '0 0 50px -10px rgba(129, 140, 248, 0.4)',
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        background: "#020617", // deep slate 950
+        surface: "rgba(255, 255, 255, 0.05)",
+        primary: "#0ea5e9", // Sky blue
+        secondary: "#6366f1", // Indigo
+        accent: "#14b8a6", // Teal
+        textMain: "#f8fafc",
+        textMuted: "#94a3b8",
       },
       animation: {
-        "spin-slow": "spin 8s linear infinite",
-        "pulse-glow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "blob": "blob 15s infinite alternate cubic-bezier(0.4, 0, 0.2, 1)",
+        "blob-reverse": "blob-reverse 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1)",
+        "ripple": "ripple 2s linear infinite",
+      },
+      keyframes: {
+        blob: {
+          "0%": { transform: "translate(0px, 0px) scale(1)" },
+          "33%": { transform: "translate(50px, -50px) scale(1.1)" },
+          "66%": { transform: "translate(-30px, 40px) scale(0.9)" },
+          "100%": { transform: "translate(0px, 0px) scale(1)" },
+        },
+        "blob-reverse": {
+          "0%": { transform: "translate(0px, 0px) scale(1)" },
+          "33%": { transform: "translate(-50px, 50px) scale(1.2)" },
+          "66%": { transform: "translate(40px, -30px) scale(0.8)" },
+          "100%": { transform: "translate(0px, 0px) scale(1)" },
+        },
+        ripple: {
+          "0%": { transform: "scale(0.8)", opacity: "1" },
+          "100%": { transform: "scale(2.5)", opacity: "0" },
+        }
       }
     },
   },
