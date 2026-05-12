@@ -4,12 +4,18 @@ import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 
 const app = express();
-app.use(cors());
+
+const FRONTEND_URL = process.env.FRONTEND_URL || '*';
+
+app.use(cors({
+  origin: FRONTEND_URL,
+  methods: ['GET', 'POST'],
+}));
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // For development; restrict in production
+    origin: FRONTEND_URL, // Allow requests from the specific frontend URL
     methods: ['GET', 'POST'],
   },
 });
