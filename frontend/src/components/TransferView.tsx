@@ -39,78 +39,76 @@ export function TransferView() {
   const isTextMode = !!textPayload || !!incomingText;
 
   return (
-    <div className="glass-panel w-full p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden">
+    <div className="glass-panel w-full p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px]">
       {connectionState === "error" && (
-        <div className="text-center animate-in fade-in zoom-in duration-300">
-          <div className="w-20 h-20 rounded-2xl bg-surface border border-border text-accent flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_-5px_rgba(255,59,48,0.3)]">
-            <AlertCircle size={40} strokeWidth={2} />
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-surface border border-border text-red-500 flex items-center justify-center mx-auto mb-6">
+            <AlertCircle size={32} strokeWidth={2} />
           </div>
-          <h2 className="text-2xl font-bold mb-2 tracking-tight text-white">Connection Error</h2>
-          <p className="text-accent/80 text-[15px] font-medium">{error || "Something went wrong"}</p>
+          <h2 className="text-2xl font-bold mb-2 text-textMain">Connection Error</h2>
+          <p className="text-red-400 text-sm">{error || "Something went wrong"}</p>
         </div>
       )}
 
       {connectionState === "waiting" && role === "sender" && (
-        <div className="text-center w-full max-w-sm animate-in fade-in zoom-in duration-300">
-          <h2 className="text-2xl font-bold mb-2 tracking-tight text-white">Ready to Send {isTextMode ? "Text" : "Files"}</h2>
-          <p className="text-white/50 mb-8 text-[15px] font-medium">Share this PIN or scan the QR code</p>
+        <div className="text-center w-full max-w-sm">
+          <h2 className="text-2xl font-bold mb-2 text-textMain">Ready to Send {isTextMode ? "Text" : "Files"}</h2>
+          <p className="text-textMuted mb-8 text-sm">Share this PIN or scan the QR code</p>
           
-          <div className="bg-white/90 p-6 rounded-3xl mb-8 inline-block shadow-glow-primary border border-white/20">
+          <div className="bg-white p-4 rounded-2xl mb-8 inline-block">
             <QRCodeSVG value={roomId || ""} size={180} fgColor="#000000" bgColor="transparent" />
           </div>
           
-          <div className="text-5xl tracking-[0.3em] font-mono font-bold text-gradient mb-8 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+          <div className="text-5xl tracking-[0.2em] font-mono font-bold text-primary mb-8">
             {roomId}
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-white/50 bg-white/5 border border-white/10 py-2.5 px-5 rounded-full w-max mx-auto">
-            <Smartphone size={18} className="animate-pulse" />
-            <span className="font-medium text-[15px]">Waiting for receiver{dots}</span>
+          <div className="flex items-center justify-center gap-2 text-textMuted bg-surface border border-border py-2 px-4 rounded-full w-max mx-auto">
+            <Smartphone size={16} />
+            <span className="text-sm">Waiting for receiver{dots}</span>
           </div>
         </div>
       )}
 
       {(connectionState === "connecting" || connectionState === "connected" || connectionState === "transferring") && (
-        <div className="text-center w-full max-w-md animate-in fade-in zoom-in duration-300">
-          <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 text-primary flex items-center justify-center mx-auto mb-6 shadow-glow-primary">
-            <Loader2 size={40} className="animate-spin" strokeWidth={2} />
+        <div className="text-center w-full max-w-md">
+          <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6">
+            <Loader2 size={32} className="animate-spin" strokeWidth={2} />
           </div>
           
-          <h2 className="text-2xl font-bold mb-6 tracking-tight text-white">
+          <h2 className="text-2xl font-bold mb-6 text-textMain">
             {connectionState === "connecting" ? `Connecting${dots}` : "Transferring..."}
           </h2>
           
           {!isTextMode && fileToDisplay && (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-8 text-left flex items-center gap-4 shadow-sm backdrop-blur-md">
-              <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+            <div className="bg-surface border border-border rounded-xl p-4 mb-8 text-left flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center flex-shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-textMuted"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-[17px] truncate text-white">{fileToDisplay.name}</p>
-                <p className="text-[13px] text-white/50 mt-0.5 font-medium">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
+                <p className="font-semibold text-base truncate text-textMain">{fileToDisplay.name}</p>
+                <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             </div>
           )}
 
           {isTextMode && (
-             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-8 shadow-sm backdrop-blur-md">
-               <p className="text-white/70 font-medium">Sending Text Payload...</p>
+             <div className="bg-surface border border-border rounded-xl p-4 mb-8">
+               <p className="text-textMuted text-sm">Sending Text Payload...</p>
              </div>
           )}
 
           {connectionState === "transferring" && !isTextMode && (
             <div className="w-full">
-              <div className="flex justify-between text-[13px] mb-2 font-semibold text-white/60">
+              <div className="flex justify-between text-xs mb-2 text-textMuted">
                 <span>{progress}%</span>
                 <span className="tabular-nums">{transferSpeed}</span>
               </div>
-              <div className="h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
+              <div className="h-2 bg-surface rounded-full overflow-hidden border border-border">
                 <div 
-                  className="h-full bg-gradient-glow transition-all duration-300 shadow-glow-primary relative"
+                  className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${progress}%` }}
-                >
-                  <div className="absolute top-0 right-0 bottom-0 left-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:12px_12px] animate-[move_1s_linear_infinite]"></div>
-                </div>
+                />
               </div>
             </div>
           )}
@@ -118,34 +116,34 @@ export function TransferView() {
       )}
 
       {connectionState === "completed" && (
-        <div className="text-center w-full max-w-md animate-in fade-in zoom-in duration-300">
-          <div className="w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 text-accent flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_-5px_rgba(45,212,191,0.3)]">
-            <CheckCircle2 size={48} strokeWidth={2} />
+        <div className="text-center w-full max-w-md">
+          <div className="w-16 h-16 rounded-full bg-surface border border-border text-green-500 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 size={32} strokeWidth={2} />
           </div>
-          <h2 className="text-3xl font-bold mb-3 tracking-tight text-white">Transfer Complete</h2>
+          <h2 className="text-3xl font-bold mb-3 text-textMain">Transfer Complete</h2>
           
           {role === "sender" ? (
-             <p className="text-white/50 text-[15px] font-medium mb-8 max-w-xs mx-auto">
-               Your {isTextMode ? "text" : "files"} were securely sent.
+             <p className="text-textMuted text-sm mb-8">
+               Your {isTextMode ? "text" : "files"} were successfully sent.
              </p>
           ) : (
             <>
               {!isTextMode && (
-                <p className="text-white/50 text-[15px] font-medium mb-8 max-w-xs mx-auto">
+                <p className="text-textMuted text-sm mb-8">
                   Your files have been saved to your device.
                 </p>
               )}
               {isTextMode && incomingText && (
                 <div className="w-full text-left mt-6">
-                  <p className="text-sm text-white/50 mb-2 ml-2 font-medium">Received Text:</p>
-                  <div className="bg-black/40 border border-white/10 rounded-2xl p-5 mb-4 max-h-[200px] overflow-y-auto text-white shadow-inner whitespace-pre-wrap break-words">
+                  <p className="text-xs text-textMuted mb-2 ml-2">Received Text:</p>
+                  <div className="bg-background border border-border rounded-xl p-4 mb-4 max-h-[200px] overflow-y-auto text-textMain whitespace-pre-wrap break-words text-sm">
                     {incomingText}
                   </div>
                   <button 
                     onClick={handleCopy}
-                    className="w-full py-3.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold rounded-xl transition-all active:scale-[0.98]"
+                    className="w-full py-3 bg-surface hover:bg-surfaceHover border border-border text-textMain rounded-lg transition-colors text-sm font-medium"
                   >
-                    {copied ? "Copied to clipboard!" : "Copy Text"}
+                    {copied ? "Copied!" : "Copy Text"}
                   </button>
                 </div>
               )}
@@ -153,12 +151,6 @@ export function TransferView() {
           )}
         </div>
       )}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes move {
-          0% { background-position: 0 0; }
-          100% { background-position: 12px 12px; }
-        }
-      `}} />
     </div>
   );
 }

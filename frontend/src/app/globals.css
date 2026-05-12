@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 body {
-  color: #f8fafc;
-  background-color: #020617;
+  color: #F3F4F6;
+  background-color: #121212;
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
@@ -12,29 +12,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fast, non-glass panels */
 .glass-panel {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 1.5rem;
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background-color: #1A1A1A;
+  border: 1px solid #333333;
+  border-radius: 1rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .glass-panel:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
-  border-left: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 16px 50px 0 rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-.text-gradient {
-  background: linear-gradient(to right, #38bdf8, #818cf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background-color: #242424;
+  border-color: #4B5563;
 }
 
 /* Hide scrollbar */
