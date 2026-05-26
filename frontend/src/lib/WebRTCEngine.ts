@@ -224,9 +224,15 @@ export class WebRTCEngine {
 
   private async startFileTransfer() {
     const state = useTransferStore.getState();
-    const { textPayload, files } = state;
+    const { textPayload, files, isScreenSharing } = state;
     
     if (!this.dataChannel) return;
+
+    if (isScreenSharing) {
+      state.setConnectionState('transferring');
+      this.dataChannel.send(JSON.stringify({ type: 'screen-share-start' }));
+      return;
+    }
 
     if (textPayload) {
       state.setConnectionState('transferring');
