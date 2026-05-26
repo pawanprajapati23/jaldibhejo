@@ -209,6 +209,9 @@ export class WebRTCEngine {
         } else if (msg.type === 'text') {
           useTransferStore.getState().setIncomingText(msg.content);
           useTransferStore.getState().setConnectionState('completed');
+        } else if (msg.type === 'screen-share-start') {
+          useTransferStore.getState().setIsScreenSharing(true);
+          useTransferStore.getState().setConnectionState('transferring');
         }
       } else if (event.data instanceof ArrayBuffer) {
         this.receivedBuffers.push(event.data);
@@ -308,6 +311,8 @@ export class WebRTCEngine {
     const blob = new Blob(this.receivedBuffers, { type: this.incomingMetadata?.fileType || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     
+    useTransferStore.getState().setDownloadedFileUrl(url);
+    
     const a = document.createElement('a');
     a.href = url;
     a.download = this.incomingMetadata?.name || 'download';
@@ -315,7 +320,6 @@ export class WebRTCEngine {
     a.click();
     document.body.removeChild(a);
     
-    URL.revokeObjectURL(url);
     useTransferStore.getState().setConnectionState('completed');
     
     // Clear memory

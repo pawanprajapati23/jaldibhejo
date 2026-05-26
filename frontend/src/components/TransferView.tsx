@@ -1,7 +1,7 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
 import { Loader2, CheckCircle2, AlertCircle, Smartphone } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export function TransferView() {
   const { 
@@ -12,14 +12,19 @@ export function TransferView() {
     incomingFile,
     textPayload,
     incomingText,
-    mediaStreamUrl,
     progress, 
     transferSpeed, 
-    error 
+    error,
+    localStream,
+    remoteStream,
+    isScreenSharing,
+    downloadedFileUrl
   } = useTransferStore();
   
   const [dots, setDots] = useState("");
   const [copied, setCopied] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (connectionState === "waiting" || connectionState === "connecting") {
@@ -27,6 +32,24 @@ export function TransferView() {
       return () => clearInterval(i);
     }
   }, [connectionState]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (role === 'sender' && localStream) {
+        videoRef.current.srcObject = localStream;
+      } else if (role === 'receiver' && remoteStream) {
+        videoRef.current.srcObject = remoteStream;
+      }
+    }
+  }, [localStream, remoteStream, isScreenSharing, role, connectionState]);
+
+  useEffect(() => {
+    if (role === "sender" && files.length > 0 && files[0].type.startsWith("image/")) {
+      const url = URL.createObjectURL(files[0]);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [files, role]);
 
   const handleCopy = () => {
     if (incomingText) {
@@ -38,6 +61,10 @@ export function TransferView() {
 
   const fileToDisplay = role === "sender" ? files[0] : incomingFile;
   const isTextMode = !!textPayload || !!incomingText;
+  
+  const displayImageUrl = role === "sender" 
+    ? previewUrl 
+    : (connectionState === "completed" && incomingFile?.type?.startsWith("image/") ? downloadedFileUrl : null);
 
   const [joinUrl, setJoinUrl] = useState("");
 
@@ -59,7 +86,7 @@ export function TransferView() {
         </div>
       )}
 
-      {connectionState === "waiting" && role === "sender" && (
+      {connectionState === "waiting" && role === "sender" && !isScreenSharing && (
         <div className="text-center w-full max-w-sm">
           <h2 className="text-2xl font-bold mb-2 text-textMain">Ready to Send {isTextMode ? "Text" : "Files"}</h2>
           <p className="text-textMuted mb-8 text-sm">Share this PIN or scan the QR code to auto-download</p>
@@ -79,7 +106,44 @@ export function TransferView() {
         </div>
       )}
 
-      {(connectionState === "connecting" || connectionState === "connected" || connectionState === "transferring") && (
+      {/* Screen Sharing View */}
+      {isScreenSharing && connectionState !== "error" && connectionState !== "disconnected" && (
+        <div className="w-full flex flex-col items-center justify-center">
+          <h2 className="text-2xl font-bold mb-6 text-textMain">
+            {role === 'sender' 
+              ? (connectionState === 'waiting' ? `Waiting for receiver${dots}` : "Sharing Screen")
+              : (connectionState === 'transferring' || connectionState === 'connected' ? "Viewing Remote Screen" : `Connecting${dots}`)
+            }
+          </h2>
+
+          {role === 'sender' && connectionState === 'waiting' && (
+             <div className="mb-6 flex flex-col items-center">
+               <div className="bg-white p-4 rounded-2xl mb-4 inline-block">
+                 <QRCodeSVG value={joinUrl || roomId || ""} size={140} fgColor="#000000" bgColor="transparent" />
+               </div>
+               <div className="text-4xl tracking-[0.2em] font-mono font-bold text-primary mb-4">
+                 {roomId}
+               </div>
+             </div>
+          )}
+
+          <div className="w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl bg-black border border-border flex items-center justify-center min-h-[300px]">
+            {(!remoteStream && role === 'receiver') ? (
+              <Loader2 size={32} className="animate-spin text-primary" />
+            ) : (
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted={role === 'sender'} 
+                className="w-full h-full object-contain"
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {(connectionState === "connecting" || connectionState === "connected" || connectionState === "transferring") && !isScreenSharing && (
         <div className="text-center w-full max-w-md">
           <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6">
             <Loader2 size={32} className="animate-spin" strokeWidth={2} />
@@ -90,13 +154,22 @@ export function TransferView() {
           </h2>
           
           {!isTextMode && fileToDisplay && (
-            <div className="bg-surface border border-border rounded-xl p-4 mb-8 text-left flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center flex-shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-textMuted"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-base truncate text-textMain">{fileToDisplay.name}</p>
-                <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
+            <div className="flex flex-col items-center w-full">
+              {displayImageUrl && (
+                <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-40 h-40 flex-shrink-0 bg-surface">
+                  <img src={displayImageUrl} alt="Preview" className="object-cover w-full h-full" />
+                </div>
+              )}
+              <div className="bg-surface border border-border rounded-xl p-4 mb-8 text-left flex items-center gap-4 w-full">
+                {!displayImageUrl && (
+                  <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center flex-shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-textMuted"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-base truncate text-textMain">{fileToDisplay.name}</p>
+                  <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
+                </div>
               </div>
             </div>
           )}
@@ -124,7 +197,7 @@ export function TransferView() {
         </div>
       )}
 
-      {connectionState === "completed" && (
+      {connectionState === "completed" && !isScreenSharing && (
         <div className="text-center w-full max-w-md">
           <div className="w-16 h-16 rounded-full bg-surface border border-border text-green-500 flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={32} strokeWidth={2} />
@@ -138,9 +211,16 @@ export function TransferView() {
           ) : (
             <>
               {!isTextMode && (
-                <p className="text-textMuted text-sm mb-8">
-                  Your files have been saved to your device.
-                </p>
+                <div className="flex flex-col items-center">
+                  {displayImageUrl && (
+                    <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-48 h-48 flex-shrink-0 bg-surface mt-4">
+                      <img src={displayImageUrl} alt="Downloaded" className="object-cover w-full h-full" />
+                    </div>
+                  )}
+                  <p className="text-textMuted text-sm mb-8 mt-2">
+                    Your files have been saved to your device.
+                  </p>
+                </div>
               )}
               {isTextMode && incomingText && (
                 <div className="w-full text-left mt-6">
