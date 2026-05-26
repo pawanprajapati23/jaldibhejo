@@ -124,6 +124,8 @@ export class WebRTCEngine {
 
   public createRoom() {
     const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+    useTransferStore.getState().setConnectionState('waiting');
+    useTransferStore.getState().setRoomId(roomId);
     this.socket.emit('create-room', roomId);
     return roomId;
   }
