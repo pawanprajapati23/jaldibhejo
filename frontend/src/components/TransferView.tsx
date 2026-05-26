@@ -127,7 +127,7 @@ export function TransferView() {
              </div>
           )}
 
-          <div className="w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl bg-black border border-border flex items-center justify-center min-h-[300px]">
+          <div className="w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl bg-black border border-border flex items-center justify-center min-h-[300px] relative group">
             {(!remoteStream && role === 'receiver') ? (
               <Loader2 size={32} className="animate-spin text-primary" />
             ) : (
@@ -138,6 +138,16 @@ export function TransferView() {
                 muted={role === 'sender'} 
                 className="w-full h-full object-contain"
               />
+            )}
+            
+            {(role === 'sender' || remoteStream) && (
+              <button 
+                onClick={() => useTransferStore.getState().reset()}
+                className="absolute bottom-6 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg transition-all opacity-0 group-hover:opacity-100 flex items-center gap-2"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+                Stop {role === 'sender' ? 'Sharing' : 'Viewing'}
+              </button>
             )}
           </div>
         </div>
