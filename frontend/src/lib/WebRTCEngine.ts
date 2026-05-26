@@ -63,8 +63,6 @@ export class WebRTCEngine {
 
     this.socket.on('room-created', (roomId: string) => {
       console.log('Room created:', roomId);
-      useTransferStore.getState().setConnectionState('waiting');
-      useTransferStore.getState().setRoomId(roomId);
     });
 
     this.socket.on('room-joined', (roomId: string) => {
@@ -360,6 +358,18 @@ export class WebRTCEngine {
     this.stopSpeedCalculation();
     if (this.dataChannel) {
       this.dataChannel.close();
+      this.dataChannel = null;
+    }
+    if (this.peerConnection) {
+      this.peerConnection.close();
+      this.peerConnection = null;
+    }
+  }
+}
+
+// Singleton instance
+export const webrtcEngine = new WebRTCEngine();
+el.close();
       this.dataChannel = null;
     }
     if (this.peerConnection) {

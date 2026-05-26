@@ -1,5 +1,6 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { Upload, Download } from "lucide-react";
+import { webrtcEngine } from "@/lib/WebRTCEngine";
 
 export function IdleView() {
   const { setMode, setRole } = useTransferStore();
@@ -8,6 +9,7 @@ export function IdleView() {
     <div className="flex flex-col md:flex-row gap-6 justify-center items-center w-full mt-8">
       <button
         onClick={() => {
+          webrtcEngine.connect();
           setMode("send");
           setRole("sender");
         }}
@@ -24,6 +26,7 @@ export function IdleView() {
 
       <button
         onClick={() => {
+          webrtcEngine.connect();
           setMode("receive");
           setRole("receiver");
         }}
