@@ -369,15 +369,3 @@ export class WebRTCEngine {
 
 // Singleton instance
 export const webrtcEngine = new WebRTCEngine();
-el.close();
-      this.dataChannel = null;
-    }
-    if (this.peerConnection) {
-      this.peerConnection.close();
-      this.peerConnection = null;
-    }
-  }
-}
-
-// Singleton instance
-export const webrtcEngine = new WebRTCEngine();
