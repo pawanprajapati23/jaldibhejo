@@ -159,6 +159,27 @@ export class WebRTCEngine {
       }
     };
 
+    this.peerConnection.oniceconnectionstatechange = () => {
+      console.log('ICE Connection state:', this.peerConnection?.iceConnectionState);
+      if (this.peerConnection?.iceConnectionState === 'connected' || this.peerConnection?.iceConnectionState === 'completed') {
+        useTransferStore.getState().setConnectionState('connected');
+      } else if (this.peerConnection?.iceConnectionState === 'failed' || this.peerConnection?.iceConnectionState === 'disconnected') {
+        useTransferStore.getState().setError('Connection lost');
+      }
+    };
+
+    this.peerConnection.ontrack = (event) => {
+      console.log('Received remote track', event.streams);
+      useTransferStore.getState().setRemoteStream(event.streams[0]);
+    };
+
+    const localStream = useTransferStore.getState().localStream;
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        this.peerConnection!.addTrack(track, localStream);
+      });
+    }
+
     if (isInitiator) {
       this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', {
         ordered: true,
@@ -169,6 +190,9 @@ export class WebRTCEngine {
         return this.peerConnection!.setLocalDescription(offer);
       }).then(() => {
         this.socket.emit('signal', { roomId, signalData: this.peerConnection!.localDescription });
+      }).catch(err => {
+        console.error('Error creating offer', err);
+        useTransferStore.getState().setError('Failed to initiate connection');
       });
     } else {
       this.peerConnection.ondatachannel = (event) => {
@@ -187,7 +211,10 @@ export class WebRTCEngine {
     this.dataChannel.onopen = () => {
       console.log('Data channel open');
       if (useTransferStore.getState().role === 'sender') {
-        this.startFileTransfer();
+        // Small delay to ensure receiver is fully ready
+        setTimeout(() => {
+          this.startFileTransfer();
+        }, 500);
       }
     };
 

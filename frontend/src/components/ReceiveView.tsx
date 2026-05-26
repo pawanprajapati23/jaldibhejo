@@ -9,6 +9,7 @@ export function ReceiveView() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin.length === 6) {
+      useTransferStore.getState().setConnectionState('connecting');
       webrtcEngine.connect();
       webrtcEngine.joinRoom(pin);
     }

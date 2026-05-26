@@ -29,6 +29,7 @@ export default function Home() {
           window.history.replaceState({}, document.title, window.location.pathname);
           
           setTimeout(() => {
+            useTransferStore.getState().setConnectionState('connecting');
             webrtcEngine.connect();
             webrtcEngine.joinRoom(pin);
           }, 300);
