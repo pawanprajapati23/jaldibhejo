@@ -21,10 +21,7 @@ interface TransferState {
   incomingFile: FileMetadata | null;
   incomingText: string | null;
   downloadedFileUrl: string | null;
-  localStream: MediaStream | null;
-  remoteStream: MediaStream | null;
-  isScreenSharing: boolean;
-  mediaStreamUrl: string | null;
+  receivedFileChecksum: string | null;
   progress: number;
   transferSpeed: string;
   error: string | null;
@@ -38,10 +35,7 @@ interface TransferState {
   setIncomingFile: (file: FileMetadata | null) => void;
   setIncomingText: (text: string | null) => void;
   setDownloadedFileUrl: (url: string | null) => void;
-  setLocalStream: (stream: MediaStream | null) => void;
-  setRemoteStream: (stream: MediaStream | null) => void;
-  setIsScreenSharing: (isSharing: boolean) => void;
-  setMediaStreamUrl: (url: string | null) => void;
+  setReceivedFileChecksum: (checksum: string | null) => void;
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
   setError: (error: string | null) => void;
@@ -58,10 +52,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   incomingFile: null,
   incomingText: null,
   downloadedFileUrl: null,
-  localStream: null,
-  remoteStream: null,
-  isScreenSharing: false,
-  mediaStreamUrl: null,
+  receivedFileChecksum: null,
   progress: 0,
   transferSpeed: '0 B/s',
   error: null,
@@ -75,18 +66,12 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   setIncomingFile: (incomingFile) => set({ incomingFile }),
   setIncomingText: (incomingText) => set({ incomingText }),
   setDownloadedFileUrl: (downloadedFileUrl) => set({ downloadedFileUrl }),
-  setLocalStream: (localStream) => set({ localStream }),
-  setRemoteStream: (remoteStream) => set({ remoteStream }),
-  setIsScreenSharing: (isScreenSharing) => set({ isScreenSharing }),
-  setMediaStreamUrl: (mediaStreamUrl) => set({ mediaStreamUrl }),
+  setReceivedFileChecksum: (receivedFileChecksum) => set({ receivedFileChecksum }),
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
   reset: () => {
-    const { localStream, downloadedFileUrl } = get();
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-    }
+    const { downloadedFileUrl } = get();
     if (downloadedFileUrl) {
       URL.revokeObjectURL(downloadedFileUrl);
     }
@@ -100,10 +85,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       incomingFile: null,
       incomingText: null,
       downloadedFileUrl: null,
-      localStream: null,
-      remoteStream: null,
-      isScreenSharing: false,
-      mediaStreamUrl: null,
+      receivedFileChecksum: null,
       progress: 0,
       transferSpeed: '0 B/s',
       error: null,

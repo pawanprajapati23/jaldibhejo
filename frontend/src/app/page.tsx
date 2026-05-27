@@ -43,9 +43,23 @@ export default function Home() {
   }, [mode]);
 
   const springTransition = { type: "spring" as const, stiffness: 300, damping: 30 };
+  const softwareJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "JaldiBhejo",
+    applicationCategory: "UtilitiesApplication",
+    operatingSystem: "Web",
+    description: "Browser-based peer-to-peer file sharing with PIN and QR code connection flows.",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+  };
 
   return (
     <div className="w-full max-w-3xl mx-auto relative perspective-1000">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }} />
       <AnimatePresence mode="wait">
         {mode === "idle" && (
           <motion.div

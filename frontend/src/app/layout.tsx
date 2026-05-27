@@ -1,10 +1,63 @@
 import type { Metadata } from "next";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+
 export const metadata: Metadata = {
-  title: "JaldiBhejo - Send Anything Instantly",
-  description: "A modern instant file-sharing platform. Send files between any devices directly from the browser.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "JaldiBhejo - Send Anything Instantly",
+    template: "%s | JaldiBhejo",
+  },
+  description: "Send files, text, and useful browser tools from JaldiBhejo. Fast peer-to-peer sharing with privacy-focused utilities.",
+  applicationName: "JaldiBhejo",
+  keywords: [
+    "JaldiBhejo",
+    "peer to peer file sharing",
+    "browser file transfer",
+    "send files without internet upload",
+    "WebRTC file transfer",
+    "send files online",
+    "image compressor",
+    "PDF tools",
+    "converter tools",
+    "developer tools",
+    "private file sharing",
+  ],
+  authors: [{ name: siteConfig.owner }],
+  creator: siteConfig.owner,
+  publisher: siteConfig.name,
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "JaldiBhejo",
+    title: "JaldiBhejo - Send Anything Instantly",
+    description: "Fast WebRTC peer-to-peer file sharing with image, PDF, converter, developer, AI, and utility tools.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "JaldiBhejo - Send Anything Instantly",
+    description: "Fast WebRTC peer-to-peer file sharing with free online tools.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({
@@ -15,20 +68,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`bg-background text-textMain antialiased selection:bg-primary/20 selection:text-primary`}>
-        
-        {/* Simple Header */}
-        <header className="fixed top-0 w-full p-6 z-10 flex justify-center items-center bg-background border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2z"/></svg>
-            </div>
-            <span className="font-bold text-lg tracking-wide text-white">JaldiBhejo</span>
-          </div>
-        </header>
+        <SiteHeader />
 
         <main className="min-h-screen flex flex-col items-center justify-center p-6 pt-24">
           {children}
         </main>
+        <SiteFooter />
       </body>
     </html>
   );

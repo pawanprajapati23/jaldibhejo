@@ -1,0 +1,10 @@
+{
+  "name": "JaldiBhejo",
+  "short_name": "JaldiBhejo",
+  "description": "Fast WebRTC peer-to-peer file sharing and free online tools.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#3B82F6",
+  "icons": []
+}

@@ -38,11 +38,6 @@ export class WebRTCEngine {
     this.socket.disconnect();
   }
 
-  private mediaSource: MediaSource | null = null;
-  private sourceBuffer: SourceBuffer | null = null;
-  private chunkQueue: ArrayBuffer[] = [];
-  private isAppending = false;
-
   private processIceBuffer() {
     if (this.peerConnection && this.peerConnection.remoteDescription) {
       while (this.iceCandidateBuffer.length > 0) {
@@ -168,18 +163,6 @@ export class WebRTCEngine {
       }
     };
 
-    this.peerConnection.ontrack = (event) => {
-      console.log('Received remote track', event.streams);
-      useTransferStore.getState().setRemoteStream(event.streams[0]);
-    };
-
-    const localStream = useTransferStore.getState().localStream;
-    if (localStream) {
-      localStream.getTracks().forEach(track => {
-        this.peerConnection!.addTrack(track, localStream);
-      });
-    }
-
     if (isInitiator) {
       this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', {
         ordered: true,
@@ -232,13 +215,10 @@ export class WebRTCEngine {
           this.startSpeedCalculation();
 
         } else if (msg.type === 'eof') {
-          this.finishDownload();
+          void this.finishDownload();
         } else if (msg.type === 'text') {
           useTransferStore.getState().setIncomingText(msg.content);
           useTransferStore.getState().setConnectionState('completed');
-        } else if (msg.type === 'screen-share-start') {
-          useTransferStore.getState().setIsScreenSharing(true);
-          useTransferStore.getState().setConnectionState('transferring');
         }
       } else if (event.data instanceof ArrayBuffer) {
         this.receivedBuffers.push(event.data);
@@ -251,15 +231,9 @@ export class WebRTCEngine {
 
   private async startFileTransfer() {
     const state = useTransferStore.getState();
-    const { textPayload, files, isScreenSharing } = state;
+    const { textPayload, files } = state;
     
     if (!this.dataChannel) return;
-
-    if (isScreenSharing) {
-      state.setConnectionState('transferring');
-      this.dataChannel.send(JSON.stringify({ type: 'screen-share-start' }));
-      return;
-    }
 
     if (textPayload) {
       state.setConnectionState('transferring');
@@ -339,21 +313,26 @@ export class WebRTCEngine {
     useTransferStore.getState().setConnectionState('completed');
   }
 
-  private finishDownload() {
+  private async finishDownload() {
     this.stopSpeedCalculation();
     const blob = new Blob(this.receivedBuffers, { type: this.incomingMetadata?.fileType || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
-    
-    useTransferStore.getState().setDownloadedFileUrl(url);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = this.incomingMetadata?.name || 'download';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    
-    useTransferStore.getState().setConnectionState('completed');
+
+    const state = useTransferStore.getState();
+    state.setDownloadedFileUrl(url);
+
+    try {
+      const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+      const checksum = Array.from(new Uint8Array(digest))
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
+      state.setReceivedFileChecksum(checksum);
+    } catch (err) {
+      console.warn('Checksum generation failed', err);
+      state.setReceivedFileChecksum(null);
+    }
+
+    state.setConnectionState('completed');
     
     // Clear memory
     this.receivedBuffers = [];

@@ -1,7 +1,7 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
-import { Loader2, CheckCircle2, AlertCircle, Smartphone } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function TransferView() {
   const { 
@@ -15,33 +15,30 @@ export function TransferView() {
     progress, 
     transferSpeed, 
     error,
-    localStream,
-    remoteStream,
-    isScreenSharing,
-    downloadedFileUrl
+    downloadedFileUrl,
+    receivedFileChecksum
   } = useTransferStore();
   
   const [dots, setDots] = useState("");
   const [copied, setCopied] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isFileReadyToSave, setIsFileReadyToSave] = useState(false);
+
+  const fileToDisplay = role === "sender" ? files[0] : incomingFile;
+  const isTextMode = !!textPayload || !!incomingText;
+  
+  const displayImageUrl = role === "sender" 
+    ? previewUrl 
+    : (connectionState === "completed" && incomingFile?.type?.startsWith("image/") ? downloadedFileUrl : null);
 
   useEffect(() => {
-    if (connectionState === "waiting" || connectionState === "connecting") {
+    const isVerifyingReceivedFile = role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode && !isFileReadyToSave;
+
+    if (connectionState === "waiting" || connectionState === "connecting" || isVerifyingReceivedFile) {
       const i = setInterval(() => setDots(p => p.length >= 3 ? "" : p + "."), 500);
       return () => clearInterval(i);
     }
-  }, [connectionState]);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      if (role === 'sender' && localStream) {
-        videoRef.current.srcObject = localStream;
-      } else if (role === 'receiver' && remoteStream) {
-        videoRef.current.srcObject = remoteStream;
-      }
-    }
-  }, [localStream, remoteStream, isScreenSharing, role, connectionState]);
+  }, [connectionState, downloadedFileUrl, incomingFile, isFileReadyToSave, isTextMode, role]);
 
   useEffect(() => {
     if (role === "sender" && files.length > 0 && files[0].type.startsWith("image/")) {
@@ -51,6 +48,16 @@ export function TransferView() {
     }
   }, [files, role]);
 
+  useEffect(() => {
+    if (role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode) {
+      setIsFileReadyToSave(false);
+      const timeout = setTimeout(() => setIsFileReadyToSave(true), 3600);
+      return () => clearTimeout(timeout);
+    }
+
+    setIsFileReadyToSave(false);
+  }, [connectionState, downloadedFileUrl, incomingFile, isTextMode, role]);
+
   const handleCopy = () => {
     if (incomingText) {
       navigator.clipboard.writeText(incomingText);
@@ -59,12 +66,16 @@ export function TransferView() {
     }
   };
 
-  const fileToDisplay = role === "sender" ? files[0] : incomingFile;
-  const isTextMode = !!textPayload || !!incomingText;
-  
-  const displayImageUrl = role === "sender" 
-    ? previewUrl 
-    : (connectionState === "completed" && incomingFile?.type?.startsWith("image/") ? downloadedFileUrl : null);
+  const handleSaveFile = () => {
+    if (!downloadedFileUrl) return;
+
+    const a = document.createElement("a");
+    a.href = downloadedFileUrl;
+    a.download = incomingFile?.name || "JaldiBhejo-download";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   const [joinUrl, setJoinUrl] = useState("");
 
@@ -86,10 +97,10 @@ export function TransferView() {
         </div>
       )}
 
-      {connectionState === "waiting" && role === "sender" && !isScreenSharing && (
+      {connectionState === "waiting" && role === "sender" && (
         <div className="text-center w-full max-w-sm">
           <h2 className="text-2xl font-bold mb-2 text-textMain">Ready to Send {isTextMode ? "Text" : "Files"}</h2>
-          <p className="text-textMuted mb-8 text-sm">Share this PIN or scan the QR code to auto-download</p>
+          <p className="text-textMuted mb-8 text-sm">Share this PIN or scan the QR code to connect</p>
           
           <div className="bg-white p-4 rounded-2xl mb-8 inline-block">
             <QRCodeSVG value={joinUrl || roomId || ""} size={180} fgColor="#000000" bgColor="transparent" />
@@ -106,54 +117,7 @@ export function TransferView() {
         </div>
       )}
 
-      {/* Screen Sharing View */}
-      {isScreenSharing && connectionState !== "error" && connectionState !== "disconnected" && (
-        <div className="w-full flex flex-col items-center justify-center">
-          <h2 className="text-2xl font-bold mb-6 text-textMain">
-            {role === 'sender' 
-              ? (connectionState === 'waiting' ? `Waiting for receiver${dots}` : "Sharing Screen")
-              : (connectionState === 'transferring' || connectionState === 'connected' ? "Viewing Remote Screen" : `Connecting${dots}`)
-            }
-          </h2>
-
-          {role === 'sender' && connectionState === 'waiting' && (
-             <div className="mb-6 flex flex-col items-center">
-               <div className="bg-white p-4 rounded-2xl mb-4 inline-block">
-                 <QRCodeSVG value={joinUrl || roomId || ""} size={140} fgColor="#000000" bgColor="transparent" />
-               </div>
-               <div className="text-4xl tracking-[0.2em] font-mono font-bold text-primary mb-4">
-                 {roomId}
-               </div>
-             </div>
-          )}
-
-          <div className="w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl bg-black border border-border flex items-center justify-center min-h-[300px] relative group">
-            {(!remoteStream && role === 'receiver') ? (
-              <Loader2 size={32} className="animate-spin text-primary" />
-            ) : (
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline 
-                muted={role === 'sender'} 
-                className="w-full h-full object-contain"
-              />
-            )}
-            
-            {(role === 'sender' || remoteStream) && (
-              <button 
-                onClick={() => useTransferStore.getState().reset()}
-                className="absolute bottom-6 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg transition-all opacity-0 group-hover:opacity-100 flex items-center gap-2"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
-                Stop {role === 'sender' ? 'Sharing' : 'Viewing'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {(connectionState === "connecting" || connectionState === "connected" || connectionState === "transferring") && !isScreenSharing && (
+      {(connectionState === "connecting" || connectionState === "connected" || connectionState === "transferring") && (
         <div className="text-center w-full max-w-md">
           <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6">
             <Loader2 size={32} className="animate-spin" strokeWidth={2} />
@@ -207,7 +171,7 @@ export function TransferView() {
         </div>
       )}
 
-      {connectionState === "completed" && !isScreenSharing && (
+      {connectionState === "completed" && (
         <div className="text-center w-full max-w-md">
           <div className="w-16 h-16 rounded-full bg-surface border border-border text-green-500 flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={32} strokeWidth={2} />
@@ -227,9 +191,40 @@ export function TransferView() {
                       <img src={displayImageUrl} alt="Downloaded" className="object-cover w-full h-full" />
                     </div>
                   )}
-                  <p className="text-textMuted text-sm mb-8 mt-2">
-                    Your files have been saved to your device.
-                  </p>
+                  {!isFileReadyToSave ? (
+                    <div className="mt-2 w-full rounded-xl border border-primary/30 bg-primary/10 p-5">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-primary/30 bg-background text-primary">
+                        <Loader2 className="animate-spin" size={24} />
+                      </div>
+                      <h3 className="font-bold text-textMain">Verifying transfer integrity{dots}</h3>
+                      <p className="mt-2 text-sm leading-6 text-textMuted">
+                        Checking the received file package before the save button appears.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-2 w-full rounded-xl border border-accent/30 bg-accent/10 p-5">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-accent/30 bg-background text-accent">
+                        <ShieldCheck size={24} />
+                      </div>
+                      <h3 className="font-bold text-textMain">File Ready to Save</h3>
+                      <p className="mt-2 text-sm leading-6 text-textMuted">
+                        Transfer completed successfully. For files from unknown senders, use your device security tools before opening.
+                      </p>
+                      {receivedFileChecksum && (
+                        <div className="mt-4 rounded-lg border border-border bg-background p-3 text-left">
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-textMuted">SHA-256 checksum</p>
+                          <p className="break-all font-mono text-xs text-textMain">{receivedFileChecksum}</p>
+                        </div>
+                      )}
+                      <button
+                        onClick={handleSaveFile}
+                        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-accent/90"
+                      >
+                        <Download size={18} />
+                        Save to Device
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               {isTextMode && incomingText && (
