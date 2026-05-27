@@ -12,11 +12,15 @@ import { webrtcEngine } from "@/lib/WebRTCEngine";
 export default function Home() {
   const { mode, connectionState, reset } = useTransferStore();
 
-  // Cleanup on unmount or when returning to idle
+  // Pre-connect on mount and cleanup
   useEffect(() => {
-    if (mode === "idle") {
-      webrtcEngine.disconnect();
+    // Connect to signaling server immediately when app loads
+    webrtcEngine.connect();
 
+    if (mode === "idle") {
+      // Don't disconnect here, keep socket alive for speed
+      // webrtcEngine.disconnect(); 
+      
       // Auto-join if opened via QR code link
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);

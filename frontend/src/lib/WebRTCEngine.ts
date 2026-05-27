@@ -134,7 +134,12 @@ export class WebRTCEngine {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
       ],
+      iceCandidatePoolSize: 10,
+      bundlePolicy: 'max-bundle',
     });
 
     useTransferStore.getState().setConnectionState('connecting');
@@ -169,7 +174,10 @@ export class WebRTCEngine {
       });
       this.setupDataChannel();
 
-      this.peerConnection.createOffer().then((offer) => {
+      this.peerConnection.createOffer({
+        offerToReceiveAudio: false,
+        offerToReceiveVideo: false,
+      }).then((offer) => {
         return this.peerConnection!.setLocalDescription(offer);
       }).then(() => {
         this.socket.emit('signal', { roomId, signalData: this.peerConnection!.localDescription });
@@ -194,10 +202,7 @@ export class WebRTCEngine {
     this.dataChannel.onopen = () => {
       console.log('Data channel open');
       if (useTransferStore.getState().role === 'sender') {
-        // Small delay to ensure receiver is fully ready
-        setTimeout(() => {
-          this.startFileTransfer();
-        }, 500);
+        this.startFileTransfer();
       }
     };
 
