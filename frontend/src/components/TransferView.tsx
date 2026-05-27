@@ -51,7 +51,19 @@ export function TransferView() {
   useEffect(() => {
     if (role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode) {
       setIsFileReadyToSave(false);
-      const timeout = setTimeout(() => setIsFileReadyToSave(true), 3600);
+      // Short delay for "Verifying" animation, then auto-download
+      const timeout = setTimeout(() => {
+        setIsFileReadyToSave(true);
+        
+        // Auto-download logic
+        const a = document.createElement("a");
+        a.href = downloadedFileUrl;
+        a.download = incomingFile.name || "JaldiBhejo-download";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, 2000); 
+      
       return () => clearTimeout(timeout);
     }
 
@@ -64,17 +76,6 @@ export function TransferView() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
-
-  const handleSaveFile = () => {
-    if (!downloadedFileUrl) return;
-
-    const a = document.createElement("a");
-    a.href = downloadedFileUrl;
-    a.download = incomingFile?.name || "JaldiBhejo-download";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   };
 
   const [joinUrl, setJoinUrl] = useState("");
@@ -198,7 +199,7 @@ export function TransferView() {
                       </div>
                       <h3 className="font-bold text-textMain">Verifying transfer integrity{dots}</h3>
                       <p className="mt-2 text-sm leading-6 text-textMuted">
-                        Checking the received file package before the save button appears.
+                        Checking the received file package...
                       </p>
                     </div>
                   ) : (
@@ -206,9 +207,9 @@ export function TransferView() {
                       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-accent/30 bg-background text-accent">
                         <ShieldCheck size={24} />
                       </div>
-                      <h3 className="font-bold text-textMain">File Ready to Save</h3>
+                      <h3 className="font-bold text-textMain">File Saved Automatically</h3>
                       <p className="mt-2 text-sm leading-6 text-textMuted">
-                        Transfer completed successfully. For files from unknown senders, use your device security tools before opening.
+                        Your file has been saved to your device downloads.
                       </p>
                       {receivedFileChecksum && (
                         <div className="mt-4 rounded-lg border border-border bg-background p-3 text-left">
@@ -216,13 +217,6 @@ export function TransferView() {
                           <p className="break-all font-mono text-xs text-textMain">{receivedFileChecksum}</p>
                         </div>
                       )}
-                      <button
-                        onClick={handleSaveFile}
-                        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-accent/90"
-                      >
-                        <Download size={18} />
-                        Save to Device
-                      </button>
                     </div>
                   )}
                 </div>
