@@ -15,8 +15,7 @@ export function TransferView() {
     progress, 
     transferSpeed, 
     error,
-    downloadedFileUrl,
-    receivedFileChecksum
+    downloadedFileUrl
   } = useTransferStore();
   
   const [dots, setDots] = useState("");
@@ -211,12 +210,6 @@ export function TransferView() {
                       <p className="mt-2 text-sm leading-6 text-textMuted">
                         Your file has been saved to your device downloads.
                       </p>
-                      {receivedFileChecksum && (
-                        <div className="mt-4 rounded-lg border border-border bg-background p-3 text-left">
-                          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-textMuted">SHA-256 checksum</p>
-                          <p className="break-all font-mono text-xs text-textMain">{receivedFileChecksum}</p>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

@@ -21,7 +21,6 @@ interface TransferState {
   incomingFile: FileMetadata | null;
   incomingText: string | null;
   downloadedFileUrl: string | null;
-  receivedFileChecksum: string | null;
   progress: number;
   transferSpeed: string;
   error: string | null;
@@ -35,7 +34,6 @@ interface TransferState {
   setIncomingFile: (file: FileMetadata | null) => void;
   setIncomingText: (text: string | null) => void;
   setDownloadedFileUrl: (url: string | null) => void;
-  setReceivedFileChecksum: (checksum: string | null) => void;
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
   setError: (error: string | null) => void;
@@ -52,7 +50,6 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   incomingFile: null,
   incomingText: null,
   downloadedFileUrl: null,
-  receivedFileChecksum: null,
   progress: 0,
   transferSpeed: '0 B/s',
   error: null,
@@ -66,7 +63,6 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   setIncomingFile: (incomingFile) => set({ incomingFile }),
   setIncomingText: (incomingText) => set({ incomingText }),
   setDownloadedFileUrl: (downloadedFileUrl) => set({ downloadedFileUrl }),
-  setReceivedFileChecksum: (receivedFileChecksum) => set({ receivedFileChecksum }),
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
@@ -85,7 +81,6 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       incomingFile: null,
       incomingText: null,
       downloadedFileUrl: null,
-      receivedFileChecksum: null,
       progress: 0,
       transferSpeed: '0 B/s',
       error: null,

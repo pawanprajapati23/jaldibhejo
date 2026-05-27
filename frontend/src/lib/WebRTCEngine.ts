@@ -326,17 +326,6 @@ export class WebRTCEngine {
     const state = useTransferStore.getState();
     state.setDownloadedFileUrl(url);
 
-    try {
-      const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
-      const checksum = Array.from(new Uint8Array(digest))
-        .map((byte) => byte.toString(16).padStart(2, '0'))
-        .join('');
-      state.setReceivedFileChecksum(checksum);
-    } catch (err) {
-      console.warn('Checksum generation failed', err);
-      state.setReceivedFileChecksum(null);
-    }
-
     state.setConnectionState('completed');
     
     // Clear memory
