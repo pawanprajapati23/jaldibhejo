@@ -37,6 +37,7 @@ interface TransferState {
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
   setError: (error: string | null) => void;
+  prepareNextTransfer: () => void;
   reset: () => void;
 }
 
@@ -66,6 +67,22 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
+  prepareNextTransfer: () => {
+    const { downloadedFileUrl } = get();
+    if (downloadedFileUrl) {
+      URL.revokeObjectURL(downloadedFileUrl);
+    }
+    set({
+      files: [],
+      textPayload: null,
+      incomingFile: null,
+      incomingText: null,
+      downloadedFileUrl: null,
+      progress: 0,
+      transferSpeed: '0 B/s',
+      connectionState: 'connected'
+    });
+  },
   reset: () => {
     const { downloadedFileUrl } = get();
     if (downloadedFileUrl) {

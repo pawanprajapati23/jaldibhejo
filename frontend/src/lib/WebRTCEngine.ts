@@ -234,7 +234,7 @@ export class WebRTCEngine {
     };
   }
 
-  private async startFileTransfer() {
+  public async startFileTransfer() {
     const state = useTransferStore.getState();
     const { textPayload, files } = state;
     

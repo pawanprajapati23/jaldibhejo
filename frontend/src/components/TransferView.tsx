@@ -1,7 +1,9 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
-import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { webrtcEngine } from "@/lib/WebRTCEngine";
+import { useDropzone } from "react-dropzone";
 
 export function TransferView() {
   const { 
@@ -15,13 +17,39 @@ export function TransferView() {
     progress, 
     transferSpeed, 
     error,
-    downloadedFileUrl
+    downloadedFileUrl,
+    setFiles,
+    setTextPayload,
+    prepareNextTransfer,
+    reset
   } = useTransferStore();
   
   const [dots, setDots] = useState("");
   const [copied, setCopied] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isFileReadyToSave, setIsFileReadyToSave] = useState(false);
+  const [showSendText, setShowSendText] = useState(false);
+  const [newText, setNewText] = useState("");
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      prepareNextTransfer();
+      setFiles(acceptedFiles);
+      webrtcEngine.startFileTransfer();
+    }
+  }, [setFiles, prepareNextTransfer]);
+
+  const { getRootProps, getInputProps, open: openFileDialog } = useDropzone({ onDrop, noClick: true });
+
+  const handleSendNewText = () => {
+    if (newText.trim().length > 0) {
+      prepareNextTransfer();
+      setTextPayload(newText.trim());
+      webrtcEngine.startFileTransfer();
+      setShowSendText(false);
+      setNewText("");
+    }
+  };
 
   const fileToDisplay = role === "sender" ? files[0] : incomingFile;
   const isTextMode = !!textPayload || !!incomingText;
@@ -86,7 +114,8 @@ export function TransferView() {
   }, [roomId]);
 
   return (
-    <div className="glass-panel w-full p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px]">
+    <div {...getRootProps()} className="glass-panel w-full p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px] outline-none">
+      <input {...getInputProps()} />
       {connectionState === "error" && (
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-surface border border-border text-red-500 flex items-center justify-center mx-auto mb-6">
@@ -230,6 +259,62 @@ export function TransferView() {
               )}
             </>
           )}
+
+          {/* Persistent Connection Actions */}
+          <div className="w-full mt-8 pt-8 border-t border-border flex flex-col items-center">
+            {showSendText ? (
+              <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <textarea 
+                  value={newText}
+                  onChange={(e) => setNewText(e.target.value)}
+                  placeholder="Type or paste a message..."
+                  className="w-full min-h-[100px] bg-surface border border-border rounded-xl p-4 text-textMain placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none transition-colors text-sm mb-4"
+                />
+                <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={() => setShowSendText(false)}
+                    className="flex-1 py-3 bg-surface hover:bg-surfaceHover border border-border text-textMain rounded-xl font-medium transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSendNewText}
+                    disabled={newText.trim().length === 0}
+                    className="flex-1 py-3 bg-primary text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-primary/90 text-sm"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-textMain mb-4">Send more on this connection</p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <button 
+                    onClick={openFileDialog}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-border hover:bg-surfaceHover hover:border-primary/50 text-textMain rounded-full transition-all text-sm font-medium"
+                  >
+                    <UploadCloud size={16} /> Send Files
+                  </button>
+                  <button 
+                    onClick={() => setShowSendText(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-border hover:bg-surfaceHover hover:border-primary/50 text-textMain rounded-full transition-all text-sm font-medium"
+                  >
+                    <MessageSquareText size={16} /> Send Text
+                  </button>
+                  <button 
+                    onClick={() => {
+                      webrtcEngine.disconnect();
+                      reset();
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-500 rounded-full transition-all text-sm font-medium"
+                  >
+                    <Home size={16} /> End & Go Home
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
