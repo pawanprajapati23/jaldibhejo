@@ -24,6 +24,8 @@ interface TransferState {
   progress: number;
   transferSpeed: string;
   error: string | null;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
 
   setMode: (mode: AppMode) => void;
   setRole: (role: Role) => void;
@@ -37,6 +39,8 @@ interface TransferState {
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
   setError: (error: string | null) => void;
+  setLocalStream: (stream: MediaStream | null) => void;
+  setRemoteStream: (stream: MediaStream | null) => void;
   prepareNextTransfer: () => void;
   reset: () => void;
 }
@@ -54,6 +58,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   progress: 0,
   transferSpeed: '0 B/s',
   error: null,
+  localStream: null,
+  remoteStream: null,
 
   setMode: (mode) => set({ mode }),
   setRole: (role) => set({ role }),
@@ -67,6 +73,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
+  setLocalStream: (localStream) => set({ localStream }),
+  setRemoteStream: (remoteStream) => set({ remoteStream }),
   prepareNextTransfer: () => {
     const { downloadedFileUrl } = get();
     if (downloadedFileUrl) {
@@ -84,9 +92,15 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     });
   },
   reset: () => {
-    const { downloadedFileUrl } = get();
+    const { downloadedFileUrl, localStream, remoteStream } = get();
     if (downloadedFileUrl) {
       URL.revokeObjectURL(downloadedFileUrl);
+    }
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+    }
+    if (remoteStream) {
+      remoteStream.getTracks().forEach(t => t.stop());
     }
     set({
       mode: 'idle',
@@ -101,6 +115,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       progress: 0,
       transferSpeed: '0 B/s',
       error: null,
+      localStream: null,
+      remoteStream: null,
     });
   },
 }));

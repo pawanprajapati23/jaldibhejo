@@ -1,9 +1,27 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
-import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { webrtcEngine } from "@/lib/WebRTCEngine";
 import { useDropzone } from "react-dropzone";
+
+function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted={muted}
+      className="w-full max-h-[60vh] rounded-xl object-contain bg-black shadow-lg border border-border"
+    />
+  );
+}
 
 export function TransferView() {
   const { 
@@ -14,6 +32,8 @@ export function TransferView() {
     incomingFile,
     textPayload,
     incomingText,
+    localStream,
+    remoteStream,
     progress, 
     transferSpeed, 
     error,
@@ -53,19 +73,20 @@ export function TransferView() {
 
   const fileToDisplay = role === "sender" ? files[0] : incomingFile;
   const isTextMode = !!textPayload || !!incomingText;
+  const isScreenMode = !!localStream || !!remoteStream;
   
   const displayImageUrl = role === "sender" 
     ? previewUrl 
     : (connectionState === "completed" && incomingFile?.type?.startsWith("image/") ? downloadedFileUrl : null);
 
   useEffect(() => {
-    const isVerifyingReceivedFile = role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode && !isFileReadyToSave;
+    const isVerifyingReceivedFile = role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode && !isScreenMode && !isFileReadyToSave;
 
     if (connectionState === "waiting" || connectionState === "connecting" || isVerifyingReceivedFile) {
       const i = setInterval(() => setDots(p => p.length >= 3 ? "" : p + "."), 500);
       return () => clearInterval(i);
     }
-  }, [connectionState, downloadedFileUrl, incomingFile, isFileReadyToSave, isTextMode, role]);
+  }, [connectionState, downloadedFileUrl, incomingFile, isFileReadyToSave, isTextMode, isScreenMode, role]);
 
   useEffect(() => {
     if (role === "sender" && files.length > 0 && files[0].type.startsWith("image/")) {
@@ -76,7 +97,7 @@ export function TransferView() {
   }, [files, role]);
 
   useEffect(() => {
-    if (role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode) {
+    if (role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode && !isScreenMode) {
       setIsFileReadyToSave(false);
       // Short delay for "Verifying" animation, then auto-download
       const timeout = setTimeout(() => {
@@ -95,7 +116,7 @@ export function TransferView() {
     }
 
     setIsFileReadyToSave(false);
-  }, [connectionState, downloadedFileUrl, incomingFile, isTextMode, role]);
+  }, [connectionState, downloadedFileUrl, incomingFile, isTextMode, isScreenMode, role]);
 
   const handleCopy = () => {
     if (incomingText) {
@@ -128,7 +149,7 @@ export function TransferView() {
 
       {connectionState === "waiting" && role === "sender" && (
         <div className="text-center w-full max-w-sm">
-          <h2 className="text-2xl font-bold mb-2 text-textMain">Ready to Send {isTextMode ? "Text" : "Files"}</h2>
+          <h2 className="text-2xl font-bold mb-2 text-textMain">Ready to Share {isScreenMode ? "Screen" : isTextMode ? "Text" : "Files"}</h2>
           <p className="text-textMuted mb-8 text-sm">Share this PIN or scan the QR code to connect</p>
           
           <div className="bg-white p-4 rounded-2xl mb-8 inline-block">
@@ -147,67 +168,125 @@ export function TransferView() {
       )}
 
       {(connectionState === "connecting" || connectionState === "connected" || connectionState === "transferring") && (
-        <div className="text-center w-full max-w-md">
-          <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6">
-            <Loader2 size={32} className="animate-spin" strokeWidth={2} />
-          </div>
-          
-          <h2 className="text-2xl font-bold mb-6 text-textMain">
-            {connectionState === "connecting" ? `Connecting${dots}` : "Transferring..."}
-          </h2>
-          
-          {!isTextMode && fileToDisplay && (
-            <div className="flex flex-col items-center w-full">
-              {displayImageUrl && (
-                <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-40 h-40 flex-shrink-0 bg-surface">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={displayImageUrl} alt="Preview" className="object-cover w-full h-full" />
+        <div className="text-center w-full max-w-4xl">
+          {connectionState === "connecting" && (
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6">
+                <Loader2 size={32} className="animate-spin" strokeWidth={2} />
+              </div>
+              <h2 className="text-2xl font-bold text-textMain">
+                Connecting{dots}
+              </h2>
+            </div>
+          )}
+
+          {isScreenMode ? (
+            <div className="flex flex-col items-center w-full mt-4 animate-in fade-in zoom-in duration-300">
+              <div className="flex items-center gap-2 mb-4 bg-surface border border-border px-4 py-2 rounded-full shadow-sm">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <span className="font-bold text-textMain text-sm uppercase tracking-widest">Live Screen Share</span>
+              </div>
+              
+              {localStream && (
+                <div className="w-full">
+                  <VideoPlayer stream={localStream} muted={true} />
+                  <p className="text-textMuted mt-4 text-sm">You are sharing your screen.</p>
                 </div>
               )}
-              <div className="bg-surface border border-border rounded-xl p-4 mb-8 text-left flex items-center gap-4 w-full">
-                {!displayImageUrl && (
-                  <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center flex-shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-textMuted"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-base truncate text-textMain">{fileToDisplay.name}</p>
-                  <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
+              {remoteStream && (
+                <div className="w-full">
+                  <VideoPlayer stream={remoteStream} />
                 </div>
-              </div>
+              )}
+              
+              <button 
+                onClick={() => {
+                   webrtcEngine.disconnect();
+                   reset();
+                }}
+                className="mt-8 px-6 py-2.5 bg-red-500/10 hover:bg-red-500 border border-red-500/50 hover:border-red-500 text-red-500 hover:text-white font-bold rounded-xl transition-colors flex items-center gap-2"
+              >
+                <MonitorUp size={18} />
+                Stop & Disconnect
+              </button>
             </div>
-          )}
+          ) : (
+            <>
+              {connectionState !== "connecting" && (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6">
+                    <Loader2 size={32} className="animate-spin" strokeWidth={2} />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-6 text-textMain">
+                    Transferring...
+                  </h2>
+                </>
+              )}
+              
+              {!isTextMode && fileToDisplay && connectionState !== "connecting" && (
+                <div className="flex flex-col items-center w-full">
+                  {displayImageUrl && (
+                    <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-40 h-40 flex-shrink-0 bg-surface">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={displayImageUrl} alt="Preview" className="object-cover w-full h-full" />
+                    </div>
+                  )}
+                  <div className="bg-surface border border-border rounded-xl p-4 mb-8 text-left flex items-center gap-4 w-full max-w-md mx-auto">
+                    {!displayImageUrl && (
+                      <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center flex-shrink-0">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-textMuted"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-base truncate text-textMain">{fileToDisplay.name}</p>
+                      <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          {isTextMode && (
-             <div className="bg-surface border border-border rounded-xl p-4 mb-8">
-               <p className="text-textMuted text-sm">Sending Text Payload...</p>
-             </div>
-          )}
+              {isTextMode && connectionState !== "connecting" && (
+                <div className="bg-surface border border-border rounded-xl p-6 mb-8 w-full max-w-md mx-auto text-left shadow-sm">
+                  <div className="flex items-center gap-2 mb-3 text-textMuted border-b border-border pb-3">
+                    <MessageSquareText size={18} />
+                    <span className="font-semibold text-sm">Sending Text</span>
+                  </div>
+                  <p className="text-textMain whitespace-pre-wrap break-words line-clamp-3 opacity-70 italic font-mono text-sm">
+                    {textPayload || incomingText}
+                  </p>
+                </div>
+              )}
 
-          {connectionState === "transferring" && !isTextMode && (
-            <div className="w-full">
-              <div className="flex justify-between text-xs mb-2 text-textMuted">
-                <span>{progress}%</span>
-                <span className="tabular-nums">{transferSpeed}</span>
-              </div>
-              <div className="h-2 bg-surface rounded-full overflow-hidden border border-border">
-                <div 
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
+              {connectionState !== "connecting" && (
+                <div className="w-full max-w-md mx-auto bg-surface border border-border rounded-full h-3 mb-3 overflow-hidden">
+                  <div 
+                    className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              )}
+
+              {connectionState !== "connecting" && (
+                <div className="flex justify-between w-full max-w-md mx-auto text-sm text-textMuted font-medium">
+                  <span>{progress}%</span>
+                  <span>{transferSpeed}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
 
-      {connectionState === "completed" && (
-        <div className="text-center w-full max-w-md">
+      {connectionState === "completed" && !isScreenMode && (
+        <div className="text-center w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="w-16 h-16 rounded-full bg-surface border border-border text-green-500 flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={32} strokeWidth={2} />
           </div>
           <h2 className="text-3xl font-bold mb-3 text-textMain">Transfer Complete</h2>
-          
+
           {role === "sender" ? (
              <p className="text-textMuted text-sm mb-8">
                Your {isTextMode ? "text" : "files"} were successfully sent.
@@ -223,7 +302,7 @@ export function TransferView() {
                     </div>
                   )}
                   {!isFileReadyToSave ? (
-                    <div className="mt-2 w-full rounded-xl border border-primary/30 bg-primary/10 p-5">
+                    <div className="mt-2 w-full max-w-sm rounded-xl border border-primary/30 bg-primary/10 p-5">
                       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-primary/30 bg-background text-primary">
                         <Loader2 className="animate-spin" size={24} />
                       </div>
@@ -233,89 +312,116 @@ export function TransferView() {
                       </p>
                     </div>
                   ) : (
-                    <div className="mt-2 w-full rounded-xl border border-accent/30 bg-accent/10 p-5">
+                    <div className="mt-2 w-full max-w-sm rounded-xl border border-accent/30 bg-accent/10 p-5">
                       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-accent/30 bg-background text-accent">
-                        <ShieldCheck size={24} />
+                        <ShieldCheck size={28} />
                       </div>
-                      <h3 className="font-bold text-textMain">File Saved Automatically</h3>
-                      <p className="mt-2 text-sm leading-6 text-textMuted">
-                        Your file has been saved to your device downloads.
+                      <h3 className="font-bold text-textMain">Transfer Verified</h3>
+                      <p className="mt-2 text-sm leading-6 text-textMuted mb-5">
+                        Your file was securely downloaded and verified. Check your downloads folder.
                       </p>
+                      <button 
+                        onClick={() => {
+                          const a = document.createElement("a");
+                          if (downloadedFileUrl) a.href = downloadedFileUrl;
+                          a.download = incomingFile?.name || "JaldiBhejo-download";
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                        className="inline-flex items-center gap-2 bg-accent text-white font-bold py-2 px-5 rounded-lg hover:bg-accent/90 transition-colors"
+                      >
+                        <Download size={18} /> Download Again
+                      </button>
                     </div>
                   )}
                 </div>
               )}
-              {isTextMode && incomingText && (
-                <div className="w-full text-left mt-6">
-                  <p className="text-xs text-textMuted mb-2 ml-2">Received Text:</p>
-                  <div className="bg-background border border-border rounded-xl p-4 mb-4 max-h-[200px] overflow-y-auto text-textMain whitespace-pre-wrap break-words text-sm">
-                    {incomingText}
+              
+              {isTextMode && (
+                <div className="w-full max-w-lg mx-auto bg-surface border border-border rounded-xl p-6 text-left shadow-sm relative group mt-4">
+                  <div className="absolute top-4 right-4">
+                    <button 
+                      onClick={handleCopy}
+                      className="p-2 bg-background border border-border rounded-md text-textMuted hover:text-primary hover:border-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      title="Copy text"
+                    >
+                      {copied ? <CheckCircle2 size={16} className="text-green-500" /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>}
+                    </button>
                   </div>
-                  <button 
-                    onClick={handleCopy}
-                    className="w-full py-3 bg-surface hover:bg-surfaceHover border border-border text-textMain rounded-lg transition-colors text-sm font-medium"
-                  >
-                    {copied ? "Copied!" : "Copy Text"}
-                  </button>
+                  <div className="flex items-center gap-2 mb-3 text-textMuted border-b border-border pb-3">
+                    <MessageSquareText size={18} />
+                    <span className="font-semibold text-sm">Received Text</span>
+                  </div>
+                  <div className="bg-background border border-border rounded-lg p-4 mt-4 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    <p className="text-textMain whitespace-pre-wrap break-words font-mono text-sm leading-relaxed select-text">
+                      {incomingText}
+                    </p>
+                  </div>
                 </div>
               )}
             </>
           )}
 
-          {/* Persistent Connection Actions */}
-          <div className="w-full mt-8 pt-8 border-t border-border flex flex-col items-center">
-            {showSendText ? (
-              <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <textarea 
-                  value={newText}
-                  onChange={(e) => setNewText(e.target.value)}
-                  placeholder="Type or paste a message..."
-                  className="w-full min-h-[100px] bg-surface border border-border rounded-xl p-4 text-textMain placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none transition-colors text-sm mb-4"
-                />
-                <div className="flex gap-3 w-full">
-                  <button 
-                    onClick={() => setShowSendText(false)}
-                    className="flex-1 py-3 bg-surface hover:bg-surfaceHover border border-border text-textMain rounded-xl font-medium transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleSendNewText}
-                    disabled={newText.trim().length === 0}
-                    className="flex-1 py-3 bg-primary text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-primary/90 text-sm"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm font-medium text-textMain mb-4">Send more on this connection</p>
-                <div className="flex flex-wrap gap-3 justify-center">
-                  <button 
-                    onClick={openFileDialog}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-border hover:bg-surfaceHover hover:border-primary/50 text-textMain rounded-full transition-all text-sm font-medium"
-                  >
-                    <UploadCloud size={16} /> Send Files
-                  </button>
-                  <button 
-                    onClick={() => setShowSendText(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-border hover:bg-surfaceHover hover:border-primary/50 text-textMain rounded-full transition-all text-sm font-medium"
-                  >
-                    <MessageSquareText size={16} /> Send Text
-                  </button>
-                  <button 
-                    onClick={() => {
-                      webrtcEngine.disconnect();
-                      reset();
-                    }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-500 rounded-full transition-all text-sm font-medium"
-                  >
-                    <Home size={16} /> End & Go Home
-                  </button>
-                </div>
-              </>
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
+            <button
+              onClick={() => {
+                webrtcEngine.disconnect();
+                reset();
+              }}
+              className="px-6 py-3 border border-border bg-surface text-textMain rounded-xl font-bold hover:bg-surfaceHover transition-colors flex items-center gap-2"
+            >
+              <Home size={18} /> Return Home
+            </button>
+            {role === "sender" && (
+              <button
+                onClick={() => setShowSendText(true)}
+                className="px-6 py-3 bg-secondary text-white rounded-xl font-bold hover:bg-secondary/90 transition-colors flex items-center gap-2"
+              >
+                <Plus size={18} /> Send More Text
+              </button>
             )}
+            {role === "sender" && (
+               <button
+                 onClick={openFileDialog}
+                 className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
+               >
+                 <UploadCloud size={18} /> Send More Files
+               </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showSendText && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background border border-border rounded-2xl w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-textMain mb-4">Send Text</h3>
+            <textarea 
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              placeholder="Type or paste text to send..."
+              className="w-full min-h-[150px] bg-surface border border-border rounded-xl p-4 text-textMain placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none transition-colors"
+              autoFocus
+            />
+            <div className="flex justify-end gap-3 mt-6">
+              <button 
+                onClick={() => {
+                  setShowSendText(false);
+                  setNewText("");
+                }}
+                className="px-5 py-2.5 rounded-xl font-semibold text-textMuted hover:text-textMain hover:bg-surface transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSendNewText}
+                disabled={newText.trim().length === 0}
+                className="px-5 py-2.5 bg-primary text-white rounded-xl font-bold disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                <MessageSquareText size={18} /> Send Text
+              </button>
+            </div>
           </div>
         </div>
       )}

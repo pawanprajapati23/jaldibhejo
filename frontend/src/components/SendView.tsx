@@ -2,11 +2,11 @@ import { useTransferStore } from "@/store/useTransferStore";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { webrtcEngine } from "@/lib/WebRTCEngine";
-import { UploadCloud, MessageSquareText } from "lucide-react";
+import { UploadCloud, MessageSquareText, MonitorUp } from "lucide-react";
 
 export function SendView() {
   const { setFiles, setTextPayload } = useTransferStore();
-  const [tab, setTab] = useState<'file' | 'text'>('file');
+  const [tab, setTab] = useState<'file' | 'text' | 'screen'>('file');
   const [text, setText] = useState('');
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -27,6 +27,22 @@ export function SendView() {
     }
   };
 
+  const handleShareScreen = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      useTransferStore.getState().setLocalStream(stream);
+      webrtcEngine.connect();
+      webrtcEngine.createRoom();
+      
+      stream.getVideoTracks()[0].onended = () => {
+        webrtcEngine.disconnect();
+        useTransferStore.getState().reset();
+      };
+    } catch (err) {
+      console.error("Error sharing screen:", err);
+    }
+  };
+
   return (
     <div className="glass-panel w-full p-8 md:p-12 text-center flex flex-col items-center justify-center min-h-[450px]">
       
@@ -43,6 +59,12 @@ export function SendView() {
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${tab === 'text' ? 'bg-primary text-white' : 'text-textMuted hover:text-white'}`}
         >
           <MessageSquareText size={16} /> Text
+        </button>
+        <button 
+          onClick={() => setTab('screen')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${tab === 'screen' ? 'bg-primary text-white' : 'text-textMuted hover:text-white'}`}
+        >
+          <MonitorUp size={16} /> Screen
         </button>
       </div>
 
@@ -83,6 +105,23 @@ export function SendView() {
             className="mt-6 w-full py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-primary/90"
           >
             Send Text
+          </button>
+        </div>
+      )}
+
+      {tab === 'screen' && (
+        <div className="w-full h-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl">
+          <div className="w-16 h-16 rounded-full bg-surface border border-border text-textMuted flex items-center justify-center mb-6">
+            <MonitorUp size={32} />
+          </div>
+          <h3 className="text-xl font-bold mb-2 text-textMain">Share your screen</h3>
+          <p className="text-textMuted mb-8 text-sm max-w-sm">Stream your entire screen, a specific window, or a browser tab directly to the receiver in real-time.</p>
+          <button 
+            onClick={handleShareScreen}
+            className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
+          >
+            <MonitorUp size={20} />
+            Start Sharing
           </button>
         </div>
       )}

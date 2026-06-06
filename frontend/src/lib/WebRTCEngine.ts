@@ -256,14 +256,27 @@ export class WebRTCEngine {
       }
     };
 
+    // Add local stream tracks if available
+    const state = useTransferStore.getState();
+    if (state.localStream) {
+      state.localStream.getTracks().forEach(track => {
+        this.peerConnection!.addTrack(track, state.localStream!);
+      });
+    }
+
+    // Handle incoming remote tracks
+    this.peerConnection.ontrack = (event) => {
+      console.log('Received remote track');
+      if (event.streams && event.streams[0]) {
+        useTransferStore.getState().setRemoteStream(event.streams[0]);
+      }
+    };
+
     if (isInitiator) {
       this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', { ordered: true });
       this.setupDataChannel();
 
-      this.peerConnection.createOffer({
-        offerToReceiveAudio: false,
-        offerToReceiveVideo: false,
-      }).then((offer) => {
+      this.peerConnection.createOffer().then((offer) => {
         return this.peerConnection!.setLocalDescription(offer);
       }).then(() => {
         this.sendSignal(peerId, this.peerConnection!.localDescription);
@@ -457,6 +470,15 @@ export class WebRTCEngine {
         off(signalRef);
         const usersRef = ref(db, `rooms/${this.roomId}/users`);
         off(usersRef);
+    }
+    const state = useTransferStore.getState();
+    if (state.localStream) {
+      state.localStream.getTracks().forEach(t => t.stop());
+      state.setLocalStream(null);
+    }
+    if (state.remoteStream) {
+      state.remoteStream.getTracks().forEach(t => t.stop());
+      state.setRemoteStream(null);
     }
   }
 }
