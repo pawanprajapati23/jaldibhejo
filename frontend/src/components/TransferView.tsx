@@ -24,14 +24,29 @@ function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch((err) => {
+      try {
+        await containerRef.current.requestFullscreen();
+        const orientation = (screen.orientation as any);
+        if (orientation && orientation.lock) {
+          // Attempt to lock to landscape for mobile devices
+          await orientation.lock('landscape').catch(() => {
+            // Ignore error, API might not be supported or allowed
+          });
+        }
+      } catch (err: any) {
         console.error("Error attempting to enable full-screen mode:", err.message);
-      });
+      }
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        const orientation = (screen.orientation as any);
+        if (orientation && orientation.unlock) {
+          orientation.unlock();
+        }
+      }
     }
   };
 
