@@ -276,7 +276,7 @@ export class WebRTCEngine {
       this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', { ordered: true });
       this.setupDataChannel();
 
-      this.peerConnection.createOffer().then((offer) => {
+      this.peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true }).then((offer) => {
         return this.peerConnection!.setLocalDescription(offer);
       }).then(() => {
         // Send the signal. ICE candidates will be sent asynchronously via onicecandidate

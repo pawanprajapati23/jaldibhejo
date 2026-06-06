@@ -46,7 +46,7 @@ export function SendView() {
         console.warn("Microphone access denied or unavailable", micErr);
       }
 
-      const combinedTracks = [...displayStream.getTracks()];
+      const combinedTracks = [...displayStream.getVideoTracks()];
       if (micStream) {
         combinedTracks.push(...micStream.getAudioTracks());
       }
