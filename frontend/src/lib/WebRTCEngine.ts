@@ -1,7 +1,7 @@
 import { useTransferStore } from '../store/useTransferStore';
 import JSZip from 'jszip';
 import { db, auth } from './firebase';
-import { ref, onValue, push, set, onChildAdded, onDisconnect, remove, off, DataSnapshot } from 'firebase/database';
+import { ref, onValue, push, set, onChildAdded, onDisconnect, remove, off, get } from 'firebase/database';
 import { signInAnonymously } from 'firebase/auth';
 
 const CHUNK_SIZE = 16 * 1024; // 16 KB for better stability on slow connections
@@ -30,16 +30,26 @@ export class WebRTCEngine {
   private pendingIsZip: boolean = false;
   private pendingTransferId: string = '';
 
-  private myId: string | null = null;
+  // Use a unique session ID per tab instead of Firebase UID so multiple tabs in the same browser can connect
+  private mySessionId: string = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   private roomId: string | null = null;
 
   constructor() {
-    // Auth anonymously to get a unique ID, but only in the browser
+    // Fire-and-forget auth initialization
     if (typeof window !== 'undefined') {
-      signInAnonymously(auth).then((user) => {
-        this.myId = user.user.uid;
-        console.log('Authenticated as:', this.myId);
-      }).catch(err => console.error('Auth error:', err));
+      this.ensureAuth().catch(() => {});
+    }
+  }
+
+  private async ensureAuth() {
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+        console.log('Authenticated for signaling session:', this.mySessionId);
+      } catch (error: any) {
+        console.error("Firebase Auth Error:", error);
+        throw new Error(`Authentication failed. Ensure 'Anonymous' Sign-in is enabled in Firebase Console. Details: ${error.message}`);
+      }
     }
   }
 
@@ -49,9 +59,9 @@ export class WebRTCEngine {
 
   public disconnect() {
     this.cleanup();
-    if (this.roomId && this.myId) {
-      const userRef = ref(db, `rooms/${this.roomId}/users/${this.myId}`);
-      remove(userRef);
+    if (this.roomId) {
+      const userRef = ref(db, `rooms/${this.roomId}/users/${this.mySessionId}`);
+      remove(userRef).catch(() => {});
     }
   }
 
@@ -67,9 +77,7 @@ export class WebRTCEngine {
   }
 
   private setupSignalingListeners(roomId: string) {
-    if (!this.myId) return;
-
-    const signalRef = ref(db, `rooms/${roomId}/signals/${this.myId}`);
+    const signalRef = ref(db, `rooms/${roomId}/signals/${this.mySessionId}`);
     onChildAdded(signalRef, async (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
@@ -103,14 +111,14 @@ export class WebRTCEngine {
       }
 
       // Remove signal after processing
-      remove(ref(db, `rooms/${roomId}/signals/${this.myId}/${snapshot.key}`));
+      remove(ref(db, `rooms/${roomId}/signals/${this.mySessionId}/${snapshot.key}`)).catch(() => {});
     });
 
     // Listen for peer-joined (for sender)
     const usersRef = ref(db, `rooms/${roomId}/users`);
     onChildAdded(usersRef, (snapshot) => {
       const peerId = snapshot.key;
-      if (peerId !== this.myId) {
+      if (peerId !== this.mySessionId) {
         console.log('Peer joined:', peerId);
         if (useTransferStore.getState().role === 'sender') {
           this.initiatePeerConnection(true, roomId, peerId!);
@@ -121,7 +129,7 @@ export class WebRTCEngine {
     // Listen for peer-left
     onValue(usersRef, (snapshot) => {
       const users = snapshot.val() || {};
-      const peerIds = Object.keys(users).filter(id => id !== this.myId);
+      const peerIds = Object.keys(users).filter(id => id !== this.mySessionId);
       if (peerIds.length === 0 && useTransferStore.getState().connectionState === 'connected') {
         useTransferStore.getState().setError('Peer disconnected');
         this.cleanup();
@@ -130,51 +138,53 @@ export class WebRTCEngine {
   }
 
   private sendSignal(recipientId: string, signalData: any) {
-    if (!this.roomId || !this.myId) return;
+    if (!this.roomId) return;
     const signalRef = ref(db, `rooms/${this.roomId}/signals/${recipientId}`);
-    push(signalRef, { senderId: this.myId, signalData });
+    push(signalRef, { senderId: this.mySessionId, signalData }).catch(() => {});
   }
 
   public async createRoom() {
-    if (!this.myId) {
-        await signInAnonymously(auth);
-        this.myId = auth.currentUser?.uid || null;
+    try {
+      await this.ensureAuth();
+      const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+      this.roomId = roomId;
+      
+      useTransferStore.getState().setConnectionState('waiting');
+      useTransferStore.getState().setRoomId(roomId);
+
+      const userRef = ref(db, `rooms/${roomId}/users/${this.mySessionId}`);
+      await set(userRef, { joinedAt: Date.now() });
+      onDisconnect(userRef).remove();
+
+      this.setupSignalingListeners(roomId);
+      return roomId;
+    } catch (error: any) {
+      useTransferStore.getState().setError(error.message || 'Failed to create room.');
     }
-    const roomId = Math.floor(100000 + Math.random() * 900000).toString();
-    this.roomId = roomId;
-    
-    useTransferStore.getState().setConnectionState('waiting');
-    useTransferStore.getState().setRoomId(roomId);
-
-    const userRef = ref(db, `rooms/${roomId}/users/${this.myId}`);
-    await set(userRef, { joinedAt: Date.now() });
-    onDisconnect(userRef).remove();
-
-    this.setupSignalingListeners(roomId);
-    return roomId;
   }
 
   public async joinRoom(roomId: string) {
-    if (!this.myId) {
-        await signInAnonymously(auth);
-        this.myId = auth.currentUser?.uid || null;
+    try {
+      await this.ensureAuth();
+      this.roomId = roomId;
+
+      // Check if room exists BEFORE joining
+      const usersRef = ref(db, `rooms/${roomId}/users`);
+      const snapshot = await get(usersRef);
+      if (!snapshot.exists() || Object.keys(snapshot.val()).length === 0) {
+          useTransferStore.getState().setError('Room not found or sender disconnected.');
+          return;
+      }
+
+      const userRef = ref(db, `rooms/${roomId}/users/${this.mySessionId}`);
+      await set(userRef, { joinedAt: Date.now() });
+      onDisconnect(userRef).remove();
+
+      this.setupSignalingListeners(roomId);
+      useTransferStore.getState().setRoomId(roomId);
+    } catch (error: any) {
+      useTransferStore.getState().setError(error.message || 'Failed to join room.');
     }
-    this.roomId = roomId;
-
-    const roomRef = ref(db, `rooms/${roomId}`);
-    onValue(roomRef, (snapshot) => {
-        if (!snapshot.exists()) {
-            useTransferStore.getState().setError('Room not found');
-            return;
-        }
-    }, { onlyOnce: true });
-
-    const userRef = ref(db, `rooms/${roomId}/users/${this.myId}`);
-    await set(userRef, { joinedAt: Date.now() });
-    onDisconnect(userRef).remove();
-
-    this.setupSignalingListeners(roomId);
-    useTransferStore.getState().setRoomId(roomId);
   }
 
   private initiatePeerConnection(isInitiator: boolean, roomId: string, peerId: string) {
@@ -414,8 +424,8 @@ export class WebRTCEngine {
     this.stopSpeedCalculation();
     if (this.dataChannel) { this.dataChannel.close(); this.dataChannel = null; }
     if (this.peerConnection) { this.peerConnection.close(); this.peerConnection = null; }
-    if (this.roomId && this.myId) {
-        const signalRef = ref(db, `rooms/${this.roomId}/signals/${this.myId}`);
+    if (this.roomId) {
+        const signalRef = ref(db, `rooms/${this.roomId}/signals/${this.mySessionId}`);
         off(signalRef);
         const usersRef = ref(db, `rooms/${this.roomId}/users`);
         off(usersRef);
