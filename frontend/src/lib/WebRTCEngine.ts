@@ -1,12 +1,13 @@
-import { io, Socket } from 'socket.io-client';
 import { useTransferStore } from '../store/useTransferStore';
 import JSZip from 'jszip';
+import { db, auth } from './firebase';
+import { ref, onValue, push, set, onChildAdded, onDisconnect, remove, off, DataSnapshot } from 'firebase/database';
+import { signInAnonymously } from 'firebase/auth';
 
 const CHUNK_SIZE = 16 * 1024; // 16 KB for better stability on slow connections
 const BUFFER_THRESHOLD = 1024 * 1024 * 2; // 2 MB
 
 export class WebRTCEngine {
-  private socket: Socket;
   private peerConnection: RTCPeerConnection | null = null;
   private dataChannel: RTCDataChannel | null = null;
   
@@ -29,20 +30,27 @@ export class WebRTCEngine {
   private pendingIsZip: boolean = false;
   private pendingTransferId: string = '';
 
-  constructor(private signalingUrl: string = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001') {
-    this.socket = io(this.signalingUrl, { autoConnect: false });
-    this.setupSocketListeners();
+  private myId: string | null = null;
+  private roomId: string | null = null;
+
+  constructor() {
+    // Auth anonymously to get a unique ID
+    signInAnonymously(auth).then((user) => {
+      this.myId = user.user.uid;
+      console.log('Authenticated as:', this.myId);
+    }).catch(err => console.error('Auth error:', err));
   }
 
-  public connect() {
-    if (!this.socket.connected) {
-      this.socket.connect();
-    }
+  public async connect() {
+    // Handled by specific actions (create/join)
   }
 
   public disconnect() {
     this.cleanup();
-    this.socket.disconnect();
+    if (this.roomId && this.myId) {
+      const userRef = ref(db, `rooms/${this.roomId}/users/${this.myId}`);
+      remove(userRef);
+    }
   }
 
   private processIceBuffer() {
@@ -56,87 +64,118 @@ export class WebRTCEngine {
     }
   }
 
-  private setupSocketListeners() {
-    const store = useTransferStore.getState();
+  private setupSignalingListeners(roomId: string) {
+    if (!this.myId) return;
 
-    this.socket.on('connect', () => {
-      console.log('Connected to signaling server');
-    });
+    const signalRef = ref(db, `rooms/${roomId}/signals/${this.myId}`);
+    onChildAdded(signalRef, async (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
 
-    this.socket.on('room-created', (roomId: string) => {
-      console.log('Room created:', roomId);
-    });
+      const { signalData, senderId } = data;
+      console.log('Received signal from:', senderId, 'type:', signalData.type || (signalData.candidate ? 'candidate' : 'unknown'));
 
-    this.socket.on('room-joined', (roomId: string) => {
-      console.log('Joined room:', roomId);
-      useTransferStore.getState().setRoomId(roomId);
-      this.initiatePeerConnection(false, roomId);
-    });
-
-    this.socket.on('peer-joined', (peerId: string) => {
-      console.log('Peer joined:', peerId);
-      const state = useTransferStore.getState();
-      if (state.role === 'sender') {
-        this.initiatePeerConnection(true, state.roomId!);
-      }
-    });
-
-    this.socket.on('signal', async (data: { senderId: string, signalData: any }) => {
-      const { signalData } = data;
-      
       if (!this.peerConnection) {
-        this.initiatePeerConnection(false, useTransferStore.getState().roomId!);
+        this.initiatePeerConnection(false, roomId, senderId);
       }
 
       try {
         if (signalData.type === 'offer') {
-          console.log('Received Offer');
           await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(signalData));
           this.processIceBuffer();
-          
           const answer = await this.peerConnection!.createAnswer();
           await this.peerConnection!.setLocalDescription(answer);
-          this.socket.emit('signal', { roomId: useTransferStore.getState().roomId, signalData: answer });
+          this.sendSignal(senderId, answer);
         } else if (signalData.type === 'answer') {
-          console.log('Received Answer');
           await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(signalData));
           this.processIceBuffer();
         } else if (signalData.candidate) {
           if (this.peerConnection!.remoteDescription) {
             await this.peerConnection!.addIceCandidate(new RTCIceCandidate(signalData));
           } else {
-            console.log('Buffering ICE candidate');
             this.iceCandidateBuffer.push(signalData);
           }
         }
       } catch (err) {
         console.error('Signal error', err);
       }
+
+      // Remove signal after processing
+      remove(ref(db, `rooms/${roomId}/signals/${this.myId}/${snapshot.key}`));
     });
 
-    this.socket.on('error', (msg: string) => {
-      useTransferStore.getState().setError(msg);
+    // Listen for peer-joined (for sender)
+    const usersRef = ref(db, `rooms/${roomId}/users`);
+    onChildAdded(usersRef, (snapshot) => {
+      const peerId = snapshot.key;
+      if (peerId !== this.myId) {
+        console.log('Peer joined:', peerId);
+        if (useTransferStore.getState().role === 'sender') {
+          this.initiatePeerConnection(true, roomId, peerId!);
+        }
+      }
     });
 
-    this.socket.on('peer-left', () => {
-      useTransferStore.getState().setError('Peer disconnected');
-      this.cleanup();
+    // Listen for peer-left
+    onValue(usersRef, (snapshot) => {
+      const users = snapshot.val() || {};
+      const peerIds = Object.keys(users).filter(id => id !== this.myId);
+      if (peerIds.length === 0 && useTransferStore.getState().connectionState === 'connected') {
+        useTransferStore.getState().setError('Peer disconnected');
+        this.cleanup();
+      }
     });
   }
 
-  public createRoom() {
+  private sendSignal(recipientId: string, signalData: any) {
+    if (!this.roomId || !this.myId) return;
+    const signalRef = ref(db, `rooms/${this.roomId}/signals/${recipientId}`);
+    push(signalRef, { senderId: this.myId, signalData });
+  }
+
+  public async createRoom() {
+    if (!this.myId) {
+        await signInAnonymously(auth);
+        this.myId = auth.currentUser?.uid || null;
+    }
     const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+    this.roomId = roomId;
+    
     useTransferStore.getState().setConnectionState('waiting');
     useTransferStore.getState().setRoomId(roomId);
-    this.socket.emit('create-room', roomId);
+
+    const userRef = ref(db, `rooms/${roomId}/users/${this.myId}`);
+    await set(userRef, { joinedAt: Date.now() });
+    onDisconnect(userRef).remove();
+
+    this.setupSignalingListeners(roomId);
     return roomId;
   }
 
-  public joinRoom(roomId: string) {
-    this.socket.emit('join-room', roomId);
+  public async joinRoom(roomId: string) {
+    if (!this.myId) {
+        await signInAnonymously(auth);
+        this.myId = auth.currentUser?.uid || null;
+    }
+    this.roomId = roomId;
+
+    const roomRef = ref(db, `rooms/${roomId}`);
+    onValue(roomRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            useTransferStore.getState().setError('Room not found');
+            return;
+        }
+    }, { onlyOnce: true });
+
+    const userRef = ref(db, `rooms/${roomId}/users/${this.myId}`);
+    await set(userRef, { joinedAt: Date.now() });
+    onDisconnect(userRef).remove();
+
+    this.setupSignalingListeners(roomId);
+    useTransferStore.getState().setRoomId(roomId);
   }
 
-  private initiatePeerConnection(isInitiator: boolean, roomId: string) {
+  private initiatePeerConnection(isInitiator: boolean, roomId: string, peerId: string) {
     this.peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -155,7 +194,7 @@ export class WebRTCEngine {
 
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        this.socket.emit('signal', { roomId, signalData: event.candidate });
+        this.sendSignal(peerId, event.candidate);
       }
     };
 
@@ -169,7 +208,6 @@ export class WebRTCEngine {
     };
 
     this.peerConnection.oniceconnectionstatechange = () => {
-      console.log('ICE Connection state:', this.peerConnection?.iceConnectionState);
       if (this.peerConnection?.iceConnectionState === 'connected' || this.peerConnection?.iceConnectionState === 'completed') {
         useTransferStore.getState().setConnectionState('connected');
       } else if (this.peerConnection?.iceConnectionState === 'failed' || this.peerConnection?.iceConnectionState === 'disconnected') {
@@ -178,9 +216,7 @@ export class WebRTCEngine {
     };
 
     if (isInitiator) {
-      this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', {
-        ordered: true,
-      });
+      this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', { ordered: true });
       this.setupDataChannel();
 
       this.peerConnection.createOffer({
@@ -189,7 +225,7 @@ export class WebRTCEngine {
       }).then((offer) => {
         return this.peerConnection!.setLocalDescription(offer);
       }).then(() => {
-        this.socket.emit('signal', { roomId, signalData: this.peerConnection!.localDescription });
+        this.sendSignal(peerId, this.peerConnection!.localDescription);
       }).catch(err => {
         console.error('Error creating offer', err);
         useTransferStore.getState().setError('Failed to initiate connection');
@@ -219,29 +255,20 @@ export class WebRTCEngine {
       if (typeof event.data === 'string') {
         const msg = JSON.parse(event.data);
         if (msg.type === 'metadata') {
-          // If it's a new transfer or different file, reset
           if (this.currentTransferId !== msg.transferId) {
-            console.log('New transfer started:', msg.name);
             this.receivedBuffers = [];
             this.receivedSize = 0;
             this.currentTransferId = msg.transferId;
             this.incomingMetadata = msg;
             this.expectedSize = msg.size;
-          } else {
-            console.log('Resuming transfer:', msg.name, 'at', this.receivedSize);
           }
-
           useTransferStore.getState().setIncomingFile({ name: msg.name, size: msg.size, type: msg.fileType, isZip: msg.isZip });
           useTransferStore.getState().setConnectionState('transferring');
           this.startSpeedCalculation();
-          
-          // Acknowledge metadata and request resume from current offset
           if (this.dataChannel && this.dataChannel.readyState === 'open') {
             this.dataChannel.send(JSON.stringify({ type: 'resume-request', offset: this.receivedSize, transferId: msg.transferId }));
           }
-
         } else if (msg.type === 'resume-request') {
-          console.log('Received resume-request at offset:', msg.offset);
           this.continueTransfer(msg.offset);
         } else if (msg.type === 'eof') {
           void this.finishDownload();
@@ -261,7 +288,6 @@ export class WebRTCEngine {
   public async startFileTransfer() {
     const state = useTransferStore.getState();
     const { textPayload, files } = state;
-    
     if (!this.dataChannel) return;
 
     if (textPayload) {
@@ -272,7 +298,6 @@ export class WebRTCEngine {
     }
 
     if (files.length === 0) return;
-
     state.setConnectionState('transferring');
 
     let fileToTransfer: Blob | File;
@@ -291,29 +316,23 @@ export class WebRTCEngine {
     }
 
     const transferId = `${fileName}-${fileToTransfer.size}`;
-    
-    // Save to pending state
     this.pendingFile = fileToTransfer;
     this.pendingFileName = fileName;
     this.pendingIsZip = isZip;
     this.pendingTransferId = transferId;
 
-    // Send metadata
     this.dataChannel.send(JSON.stringify({
       type: 'metadata',
-      transferId: transferId,
+      transferId,
       name: fileName,
       size: fileToTransfer.size,
       fileType: isZip ? 'application/zip' : fileToTransfer.type,
       isZip
     }));
-    
-    console.log('Metadata sent, waiting for resume-request...');
   }
 
   private async continueTransfer(offset: number) {
     if (!this.dataChannel || !this.pendingFile) return;
-
     this.startSpeedCalculation();
     let currentOffset = offset;
     const fileToTransfer = this.pendingFile;
@@ -329,11 +348,7 @@ export class WebRTCEngine {
     };
 
     while (currentOffset < fileToTransfer.size) {
-      if (this.dataChannel.readyState !== 'open') {
-        console.log('Data channel closed during transfer');
-        break;
-      }
-
+      if (this.dataChannel.readyState !== 'open') break;
       if (this.dataChannel.bufferedAmount > BUFFER_THRESHOLD) {
         await new Promise<void>((resolve) => {
           if (!this.dataChannel) return resolve();
@@ -342,15 +357,12 @@ export class WebRTCEngine {
             resolve();
           };
         });
-        // Check state again after waiting
         if (!this.dataChannel || this.dataChannel.readyState !== 'open') break;
       }
-
       const chunk = await readSlice(currentOffset);
       this.dataChannel.send(chunk);
       currentOffset += chunk.byteLength;
-      this.receivedSize = currentOffset; // For speed calculation
-
+      this.receivedSize = currentOffset;
       const progress = Math.min(100, Math.round((currentOffset / fileToTransfer.size) * 100));
       useTransferStore.getState().setProgress(progress);
     }
@@ -359,7 +371,7 @@ export class WebRTCEngine {
       this.dataChannel.send(JSON.stringify({ type: 'eof' }));
       this.stopSpeedCalculation();
       useTransferStore.getState().setConnectionState('completed');
-      this.pendingFile = null; // Clear after completion
+      this.pendingFile = null;
     }
   }
 
@@ -367,62 +379,45 @@ export class WebRTCEngine {
     this.stopSpeedCalculation();
     const blob = new Blob(this.receivedBuffers, { type: this.incomingMetadata?.fileType || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
-
-    const state = useTransferStore.getState();
-    state.setDownloadedFileUrl(url);
-
-    state.setConnectionState('completed');
-    
-    // Clear memory
+    useTransferStore.getState().setDownloadedFileUrl(url);
+    useTransferStore.getState().setConnectionState('completed');
     this.receivedBuffers = [];
   }
 
   private startSpeedCalculation() {
     this.lastUpdateBytes = this.receivedSize;
     this.lastUpdateTime = Date.now();
-    
     this.speedInterval = setInterval(() => {
       const now = Date.now();
       const timeDiff = (now - this.lastUpdateTime) / 1000;
       const bytesDiff = this.receivedSize - this.lastUpdateBytes;
-      
       if (timeDiff > 0) {
         let speed = bytesDiff / timeDiff;
         let unit = 'B/s';
-        if (speed > 1024 * 1024) {
-          speed /= (1024 * 1024);
-          unit = 'MB/s';
-        } else if (speed > 1024) {
-          speed /= 1024;
-          unit = 'KB/s';
-        }
+        if (speed > 1024 * 1024) { speed /= (1024 * 1024); unit = 'MB/s'; }
+        else if (speed > 1024) { speed /= 1024; unit = 'KB/s'; }
         useTransferStore.getState().setTransferSpeed(`${speed.toFixed(2)} ${unit}`);
       }
-
       this.lastUpdateBytes = this.receivedSize;
       this.lastUpdateTime = now;
     }, 1000);
   }
 
   private stopSpeedCalculation() {
-    if (this.speedInterval) {
-      clearInterval(this.speedInterval);
-      this.speedInterval = null;
-    }
+    if (this.speedInterval) { clearInterval(this.speedInterval); this.speedInterval = null; }
   }
 
   private cleanup() {
     this.stopSpeedCalculation();
-    if (this.dataChannel) {
-      this.dataChannel.close();
-      this.dataChannel = null;
-    }
-    if (this.peerConnection) {
-      this.peerConnection.close();
-      this.peerConnection = null;
+    if (this.dataChannel) { this.dataChannel.close(); this.dataChannel = null; }
+    if (this.peerConnection) { this.peerConnection.close(); this.peerConnection = null; }
+    if (this.roomId && this.myId) {
+        const signalRef = ref(db, `rooms/${this.roomId}/signals/${this.myId}`);
+        off(signalRef);
+        const usersRef = ref(db, `rooms/${this.roomId}/users`);
+        off(usersRef);
     }
   }
 }
 
-// Singleton instance
 export const webrtcEngine = new WebRTCEngine();

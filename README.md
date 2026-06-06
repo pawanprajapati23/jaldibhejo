@@ -12,28 +12,27 @@ JaldiBhejo is a premium, browser-based cross-platform file-sharing web app. It a
 
 ## 🛠 Tech Stack
 - **Frontend**: Next.js 14, Tailwind CSS, Framer Motion, Zustand.
-- **Backend**: Node.js, Socket.IO (Signaling only).
-- **Transfer**: WebRTC DataChannels with custom chunking logic.
+- **Backend**: Firebase (Realtime Database for signaling, Auth for anonymous sessions).
+- **Transfer**: WebRTC DataChannels with custom resumable chunking logic.
 
 ---
 
 ## 📁 Project Structure
-- `/jaldibhejo-frontend`: The Next.js web application.
-- `/jaldibhejo-backend`: The Node.js signaling server.
+- `/frontend`: The Next.js web application.
+- `firebase.ts`: Firebase configuration and initialization.
 
 ## ⚙️ Local Setup
 
-### 1. Backend
-```bash
-cd jaldibhejo-backend
-npm install
-npm run dev
-```
-*Runs on `http://localhost:3001` by default.*
+### 1. Firebase Setup
+1. Create a project at [Firebase Console](https://console.firebase.google.com/).
+2. Enable **Realtime Database** and **Anonymous Authentication**.
+3. Copy your project credentials.
 
 ### 2. Frontend
 ```bash
-cd jaldibhejo-frontend
+cd frontend
+cp .env.example .env.local
+# Add your Firebase credentials to .env.local
 npm install
 npm run dev
 ```
