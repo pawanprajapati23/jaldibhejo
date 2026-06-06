@@ -1,25 +1,57 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
-import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp, Maximize, Minimize } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { webrtcEngine } from "@/lib/WebRTCEngine";
 import { useDropzone } from "react-dropzone";
 
 function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
     }
   }, [stream]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch((err) => {
+        console.error("Error attempting to enable full-screen mode:", err.message);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      playsInline
-      muted={muted}
-      className="w-full max-h-[60vh] rounded-xl object-contain bg-black shadow-lg border border-border"
-    />
+    <div ref={containerRef} className="relative group w-full flex justify-center bg-black rounded-xl overflow-hidden shadow-lg border border-border">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={muted}
+        className="w-full max-h-[70vh] object-contain"
+      />
+      <button
+        onClick={toggleFullscreen}
+        className="absolute bottom-4 right-4 p-2 bg-black/50 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+        title="Toggle Fullscreen"
+      >
+        {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+      </button>
+    </div>
   );
 }
 

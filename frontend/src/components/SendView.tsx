@@ -29,7 +29,15 @@ export function SendView() {
 
   const handleShareScreen = async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      // Add constraints to optimize for lower latency and smoother streaming over mobile networks/TURN relays
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, max: 30 }
+        },
+        audio: true
+      });
       useTransferStore.getState().setLocalStream(stream);
       webrtcEngine.connect();
       webrtcEngine.createRoom();
