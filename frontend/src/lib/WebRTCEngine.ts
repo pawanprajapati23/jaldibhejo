@@ -228,7 +228,7 @@ export class WebRTCEngine {
         useTransferStore.getState().setError('Connection timeout: Strict network or firewall blocking P2P.');
         this.cleanup();
       }
-    }, 20000);
+    }, 35000);
 
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
@@ -241,8 +241,8 @@ export class WebRTCEngine {
       if (this.peerConnection?.connectionState === 'connected') {
         if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
         useTransferStore.getState().setConnectionState('connected');
-      } else if (this.peerConnection?.connectionState === 'failed' || this.peerConnection?.connectionState === 'disconnected') {
-        useTransferStore.getState().setError('Connection lost');
+      } else if (this.peerConnection?.connectionState === 'failed') {
+        useTransferStore.getState().setError('Connection failed. Please refresh and try again.');
       }
     };
 
@@ -251,8 +251,8 @@ export class WebRTCEngine {
       if (state === 'connected' || state === 'completed') {
         if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
         useTransferStore.getState().setConnectionState('connected');
-      } else if (state === 'failed' || state === 'disconnected') {
-        useTransferStore.getState().setError('Connection lost');
+      } else if (state === 'failed') {
+        useTransferStore.getState().setError('Connection failed. Please refresh and try again.');
       }
     };
 
