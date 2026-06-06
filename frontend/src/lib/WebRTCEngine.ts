@@ -34,11 +34,13 @@ export class WebRTCEngine {
   private roomId: string | null = null;
 
   constructor() {
-    // Auth anonymously to get a unique ID
-    signInAnonymously(auth).then((user) => {
-      this.myId = user.user.uid;
-      console.log('Authenticated as:', this.myId);
-    }).catch(err => console.error('Auth error:', err));
+    // Auth anonymously to get a unique ID, but only in the browser
+    if (typeof window !== 'undefined') {
+      signInAnonymously(auth).then((user) => {
+        this.myId = user.user.uid;
+        console.log('Authenticated as:', this.myId);
+      }).catch(err => console.error('Auth error:', err));
+    }
   }
 
   public async connect() {
