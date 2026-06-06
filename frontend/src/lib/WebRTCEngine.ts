@@ -33,6 +33,7 @@ export class WebRTCEngine {
   // Use a unique session ID per tab instead of Firebase UID so multiple tabs in the same browser can connect
   private mySessionId: string = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   private roomId: string | null = null;
+  private connectionTimeout: any = null;
 
   constructor() {
     // Fire-and-forget auth initialization
@@ -140,7 +141,13 @@ export class WebRTCEngine {
   private sendSignal(recipientId: string, signalData: any) {
     if (!this.roomId) return;
     const signalRef = ref(db, `rooms/${this.roomId}/signals/${recipientId}`);
-    push(signalRef, { senderId: this.mySessionId, signalData }).catch(() => {});
+    
+    // Firebase Realtime DB will silently fail or reject if it receives an RTCSessionDescription
+    // or RTCIceCandidate object directly because they have prototypes. We MUST serialize them.
+    const serializedSignal = JSON.parse(JSON.stringify(signalData));
+    
+    push(signalRef, { senderId: this.mySessionId, signalData: serializedSignal })
+      .catch((err) => console.error("Firebase signal push error:", err));
   }
 
   public async createRoom() {
@@ -214,6 +221,15 @@ export class WebRTCEngine {
 
     useTransferStore.getState().setConnectionState('connecting');
 
+    // Add a timeout to prevent infinite "Connecting..." hangs
+    if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
+    this.connectionTimeout = setTimeout(() => {
+      if (useTransferStore.getState().connectionState === 'connecting') {
+        useTransferStore.getState().setError('Connection timeout: Strict network or firewall blocking P2P.');
+        this.cleanup();
+      }
+    }, 20000);
+
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
         this.sendSignal(peerId, event.candidate);
@@ -223,6 +239,7 @@ export class WebRTCEngine {
     this.peerConnection.onconnectionstatechange = () => {
       console.log('Connection state:', this.peerConnection?.connectionState);
       if (this.peerConnection?.connectionState === 'connected') {
+        if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
         useTransferStore.getState().setConnectionState('connected');
       } else if (this.peerConnection?.connectionState === 'failed' || this.peerConnection?.connectionState === 'disconnected') {
         useTransferStore.getState().setError('Connection lost');
@@ -232,6 +249,7 @@ export class WebRTCEngine {
     this.peerConnection.oniceconnectionstatechange = () => {
       const state = (this.peerConnection as any)?.iceConnectionState;
       if (state === 'connected' || state === 'completed') {
+        if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
         useTransferStore.getState().setConnectionState('connected');
       } else if (state === 'failed' || state === 'disconnected') {
         useTransferStore.getState().setError('Connection lost');
