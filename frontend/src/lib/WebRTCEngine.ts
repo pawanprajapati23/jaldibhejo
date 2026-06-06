@@ -208,9 +208,10 @@ export class WebRTCEngine {
     };
 
     this.peerConnection.oniceconnectionstatechange = () => {
-      if (this.peerConnection?.iceConnectionState === 'connected' || this.peerConnection?.iceConnectionState === 'completed') {
+      const state = (this.peerConnection as any)?.iceConnectionState;
+      if (state === 'connected' || state === 'completed') {
         useTransferStore.getState().setConnectionState('connected');
-      } else if (this.peerConnection?.iceConnectionState === 'failed' || this.peerConnection?.iceConnectionState === 'disconnected') {
+      } else if (state === 'failed' || state === 'disconnected') {
         useTransferStore.getState().setError('Connection lost');
       }
     };
