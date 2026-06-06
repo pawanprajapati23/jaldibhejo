@@ -51,13 +51,13 @@ function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }
   };
 
   return (
-    <div ref={containerRef} className="relative group w-full flex justify-center bg-black rounded-xl overflow-hidden shadow-lg border border-border">
+    <div ref={containerRef} className={`relative group w-full flex items-center justify-center bg-black overflow-hidden shadow-lg ${isFullscreen ? "h-screen w-screen rounded-none border-none" : "rounded-xl border border-border"}`}>
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted={muted}
-        className="w-full max-h-[70vh] object-contain"
+        className={`w-full object-contain ${isFullscreen ? "h-full max-h-screen" : "max-h-[70vh]"}`}
       />
       <button
         onClick={toggleFullscreen}
