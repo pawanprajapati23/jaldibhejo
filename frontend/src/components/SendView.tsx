@@ -30,7 +30,7 @@ export function SendView() {
   const handleShareScreen = async () => {
     try {
       // Add constraints to optimize for lower latency and smoother streaming over mobile networks/TURN relays
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           width: { ideal: 1280, max: 1920 },
           height: { ideal: 720, max: 1080 },
@@ -38,11 +38,26 @@ export function SendView() {
         },
         audio: true
       });
-      useTransferStore.getState().setLocalStream(stream);
+
+      let micStream: MediaStream | null = null;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (micErr) {
+        console.warn("Microphone access denied or unavailable", micErr);
+      }
+
+      const combinedTracks = [...displayStream.getTracks()];
+      if (micStream) {
+        combinedTracks.push(...micStream.getAudioTracks());
+      }
+
+      const combinedStream = new MediaStream(combinedTracks);
+      useTransferStore.getState().setLocalStream(combinedStream);
       webrtcEngine.connect();
       webrtcEngine.createRoom();
       
-      stream.getVideoTracks()[0].onended = () => {
+      displayStream.getVideoTracks()[0].onended = () => {
+        if (micStream) micStream.getTracks().forEach(t => t.stop());
         webrtcEngine.disconnect();
         useTransferStore.getState().reset();
       };

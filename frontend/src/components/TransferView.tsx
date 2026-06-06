@@ -1,6 +1,6 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
-import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp, Maximize, Minimize } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp, Maximize, Minimize, Mic, MicOff } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { webrtcEngine } from "@/lib/WebRTCEngine";
 import { useDropzone } from "react-dropzone";
@@ -97,6 +97,16 @@ export function TransferView() {
   const [isFileReadyToSave, setIsFileReadyToSave] = useState(false);
   const [showSendText, setShowSendText] = useState(false);
   const [newText, setNewText] = useState("");
+  const [isMuted, setIsMuted] = useState(false);
+
+  const toggleMute = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = isMuted; // If it's currently muted (true), we enable it (set to true)
+      });
+      setIsMuted(!isMuted);
+    }
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -249,16 +259,28 @@ export function TransferView() {
                 </div>
               )}
               
-              <button 
-                onClick={() => {
-                   webrtcEngine.disconnect();
-                   reset();
-                }}
-                className="mt-8 px-6 py-2.5 bg-red-500/10 hover:bg-red-500 border border-red-500/50 hover:border-red-500 text-red-500 hover:text-white font-bold rounded-xl transition-colors flex items-center gap-2"
-              >
-                <MonitorUp size={18} />
-                Stop & Disconnect
-              </button>
+              <div className="flex flex-wrap justify-center gap-4 mt-8">
+                {role === 'sender' && (
+                  <button 
+                    onClick={toggleMute}
+                    className={`px-6 py-2.5 font-bold rounded-xl transition-colors flex items-center gap-2 border ${isMuted ? 'bg-red-500/10 text-red-500 border-red-500/50 hover:bg-red-500 hover:text-white' : 'bg-surface text-textMain border-border hover:bg-surfaceHover'}`}
+                  >
+                    {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+                    {isMuted ? 'Unmute' : 'Mute'}
+                  </button>
+                )}
+                
+                <button 
+                  onClick={() => {
+                     webrtcEngine.disconnect();
+                     reset();
+                  }}
+                  className="px-6 py-2.5 bg-red-500/10 hover:bg-red-500 border border-red-500/50 hover:border-red-500 text-red-500 hover:text-white font-bold rounded-xl transition-colors flex items-center gap-2"
+                >
+                  <MonitorUp size={18} />
+                  Stop & Disconnect
+                </button>
+              </div>
             </div>
           ) : (
             <>
