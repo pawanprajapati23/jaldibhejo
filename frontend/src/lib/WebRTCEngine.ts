@@ -2,8 +2,8 @@ import { io, Socket } from 'socket.io-client';
 import { useTransferStore } from '../store/useTransferStore';
 import JSZip from 'jszip';
 
-const CHUNK_SIZE = 64 * 1024; // 64 KB
-const BUFFER_THRESHOLD = 1024 * 1024 * 5; // 5 MB
+const CHUNK_SIZE = 16 * 1024; // 16 KB for better stability on slow connections
+const BUFFER_THRESHOLD = 1024 * 1024 * 2; // 2 MB
 
 export class WebRTCEngine {
   private socket: Socket;
@@ -14,6 +14,7 @@ export class WebRTCEngine {
   private receivedSize = 0;
   private expectedSize = 0;
   private incomingMetadata: any = null;
+  private currentTransferId: string | null = null;
 
   // Track transfer speed
   private lastUpdateBytes = 0;
@@ -21,6 +22,12 @@ export class WebRTCEngine {
   private speedInterval: any = null;
 
   private iceCandidateBuffer: any[] = [];
+  
+  // Pending transfer state
+  private pendingFile: Blob | null = null;
+  private pendingFileName: string = '';
+  private pendingIsZip: boolean = false;
+  private pendingTransferId: string = '';
 
   constructor(private signalingUrl: string = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001') {
     this.socket = io(this.signalingUrl, { autoConnect: false });
@@ -137,6 +144,8 @@ export class WebRTCEngine {
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'stun:stun.services.mozilla.com' },
+        { urls: 'stun:global.stun.twilio.com:3478' },
       ],
       iceCandidatePoolSize: 10,
       bundlePolicy: 'max-bundle',
@@ -210,15 +219,30 @@ export class WebRTCEngine {
       if (typeof event.data === 'string') {
         const msg = JSON.parse(event.data);
         if (msg.type === 'metadata') {
-          this.incomingMetadata = msg;
-          this.expectedSize = msg.size;
-          this.receivedSize = 0;
-          this.receivedBuffers = [];
+          // If it's a new transfer or different file, reset
+          if (this.currentTransferId !== msg.transferId) {
+            console.log('New transfer started:', msg.name);
+            this.receivedBuffers = [];
+            this.receivedSize = 0;
+            this.currentTransferId = msg.transferId;
+            this.incomingMetadata = msg;
+            this.expectedSize = msg.size;
+          } else {
+            console.log('Resuming transfer:', msg.name, 'at', this.receivedSize);
+          }
 
           useTransferStore.getState().setIncomingFile({ name: msg.name, size: msg.size, type: msg.fileType, isZip: msg.isZip });
           useTransferStore.getState().setConnectionState('transferring');
           this.startSpeedCalculation();
+          
+          // Acknowledge metadata and request resume from current offset
+          if (this.dataChannel && this.dataChannel.readyState === 'open') {
+            this.dataChannel.send(JSON.stringify({ type: 'resume-request', offset: this.receivedSize, transferId: msg.transferId }));
+          }
 
+        } else if (msg.type === 'resume-request') {
+          console.log('Received resume-request at offset:', msg.offset);
+          this.continueTransfer(msg.offset);
         } else if (msg.type === 'eof') {
           void this.finishDownload();
         } else if (msg.type === 'text') {
@@ -250,7 +274,6 @@ export class WebRTCEngine {
     if (files.length === 0) return;
 
     state.setConnectionState('transferring');
-    this.startSpeedCalculation();
 
     let fileToTransfer: Blob | File;
     let fileName = '';
@@ -267,16 +290,33 @@ export class WebRTCEngine {
       fileToTransfer = await zip.generateAsync({ type: 'blob' });
     }
 
+    const transferId = `${fileName}-${fileToTransfer.size}`;
+    
+    // Save to pending state
+    this.pendingFile = fileToTransfer;
+    this.pendingFileName = fileName;
+    this.pendingIsZip = isZip;
+    this.pendingTransferId = transferId;
+
     // Send metadata
     this.dataChannel.send(JSON.stringify({
       type: 'metadata',
+      transferId: transferId,
       name: fileName,
       size: fileToTransfer.size,
       fileType: isZip ? 'application/zip' : fileToTransfer.type,
       isZip
     }));
+    
+    console.log('Metadata sent, waiting for resume-request...');
+  }
 
-    let offset = 0;
+  private async continueTransfer(offset: number) {
+    if (!this.dataChannel || !this.pendingFile) return;
+
+    this.startSpeedCalculation();
+    let currentOffset = offset;
+    const fileToTransfer = this.pendingFile;
 
     const readSlice = (o: number): Promise<ArrayBuffer> => {
       return new Promise((resolve, reject) => {
@@ -288,9 +328,9 @@ export class WebRTCEngine {
       });
     };
 
-    while (offset < fileToTransfer.size) {
+    while (currentOffset < fileToTransfer.size) {
       if (this.dataChannel.readyState !== 'open') {
-        useTransferStore.getState().setError('Data channel closed unexpectedly');
+        console.log('Data channel closed during transfer');
         break;
       }
 
@@ -302,20 +342,25 @@ export class WebRTCEngine {
             resolve();
           };
         });
+        // Check state again after waiting
+        if (!this.dataChannel || this.dataChannel.readyState !== 'open') break;
       }
 
-      const chunk = await readSlice(offset);
+      const chunk = await readSlice(currentOffset);
       this.dataChannel.send(chunk);
-      offset += chunk.byteLength;
-      this.receivedSize = offset;
+      currentOffset += chunk.byteLength;
+      this.receivedSize = currentOffset; // For speed calculation
 
-      const progress = Math.min(100, Math.round((offset / fileToTransfer.size) * 100));
+      const progress = Math.min(100, Math.round((currentOffset / fileToTransfer.size) * 100));
       useTransferStore.getState().setProgress(progress);
     }
 
-    this.dataChannel.send(JSON.stringify({ type: 'eof' }));
-    this.stopSpeedCalculation();
-    useTransferStore.getState().setConnectionState('completed');
+    if (this.dataChannel && this.dataChannel.readyState === 'open' && currentOffset >= fileToTransfer.size) {
+      this.dataChannel.send(JSON.stringify({ type: 'eof' }));
+      this.stopSpeedCalculation();
+      useTransferStore.getState().setConnectionState('completed');
+      this.pendingFile = null; // Clear after completion
+    }
   }
 
   private async finishDownload() {
@@ -333,7 +378,7 @@ export class WebRTCEngine {
   }
 
   private startSpeedCalculation() {
-    this.lastUpdateBytes = 0;
+    this.lastUpdateBytes = this.receivedSize;
     this.lastUpdateTime = Date.now();
     
     this.speedInterval = setInterval(() => {
