@@ -188,6 +188,7 @@ export function ImageCompressorTool() {
           {originalUrl ? (
             <div className="w-full">
               <div className="relative mx-auto mb-5 aspect-video w-full max-w-xl overflow-hidden rounded-xl border border-border bg-surface">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={originalUrl} alt="Original image preview" className="h-full w-full object-contain" />
               </div>
               <p className="truncate text-sm font-semibold text-textMain">{file?.name}</p>

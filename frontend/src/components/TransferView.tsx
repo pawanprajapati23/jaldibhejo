@@ -160,6 +160,7 @@ export function TransferView() {
             <div className="flex flex-col items-center w-full">
               {displayImageUrl && (
                 <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-40 h-40 flex-shrink-0 bg-surface">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={displayImageUrl} alt="Preview" className="object-cover w-full h-full" />
                 </div>
               )}
@@ -217,6 +218,7 @@ export function TransferView() {
                 <div className="flex flex-col items-center">
                   {displayImageUrl && (
                     <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-48 h-48 flex-shrink-0 bg-surface mt-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={displayImageUrl} alt="Downloaded" className="object-cover w-full h-full" />
                     </div>
                   )}
