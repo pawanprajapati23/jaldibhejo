@@ -279,6 +279,7 @@ export class WebRTCEngine {
       this.peerConnection.createOffer().then((offer) => {
         return this.peerConnection!.setLocalDescription(offer);
       }).then(() => {
+        // Send the signal. ICE candidates will be sent asynchronously via onicecandidate
         this.sendSignal(peerId, this.peerConnection!.localDescription);
       }).catch(err => {
         console.error('Error creating offer', err);
@@ -289,6 +290,9 @@ export class WebRTCEngine {
         this.dataChannel = event.channel;
         this.setupDataChannel();
       };
+      
+      // If we are not the initiator, but we have a screen to share (which is unlikely in current UI but possible)
+      // the tracks are already added above, they will be negotiated when we createAnswer.
     }
   }
 
@@ -300,7 +304,7 @@ export class WebRTCEngine {
 
     this.dataChannel.onopen = () => {
       console.log('Data channel open');
-      if (useTransferStore.getState().role === 'sender') {
+      if (useTransferStore.getState().role === 'sender' && !useTransferStore.getState().localStream) {
         this.startFileTransfer();
       }
     };
