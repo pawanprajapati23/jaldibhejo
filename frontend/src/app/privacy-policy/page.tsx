@@ -1,78 +1,40 @@
-import type { Metadata } from "next";
-import { ContentPage, ContentSection } from "@/components/ContentPage";
-import { siteConfig } from "@/lib/site";
-
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "Read JaldiBhejo's privacy policy for WebRTC file sharing, online tools, cookies, Google AdSense, and Analytics.",
-  alternates: {
-    canonical: "/privacy-policy",
-  },
-};
+import React from 'react';
 
 export default function PrivacyPolicyPage() {
   return (
-    <ContentPage
-      eyebrow="Privacy Policy"
-      title="Privacy Policy"
-      description={`This policy explains how ${siteConfig.name} handles information when you use our WebRTC file sharing feature and online tools.`}
-    >
-      <ContentSection title="Overview">
-        <p>
-          {siteConfig.name} is owned by {siteConfig.owner}. The website is available at {siteConfig.url}. For privacy questions, contact {siteConfig.email}.
-        </p>
-        <p>
-          JaldiBhejo is designed for quick browser-based file transfers and online tools. We do not ask users to create an account to send or receive files.
-        </p>
-      </ContentSection>
+    <main className="max-w-4xl mx-auto py-12 px-4 prose prose-invert">
+      <h1>Privacy Policy</h1>
+      <p>Last updated: {new Date().toLocaleDateString()}</p>
+      
+      <h2>1. Introduction</h2>
+      <p>Welcome to JaldiBhejo. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.</p>
 
-      <ContentSection title="WebRTC file sharing">
-        <p>
-          JaldiBhejo uses WebRTC peer-to-peer technology for file sharing. When possible, files move directly from the sender&apos;s browser to the receiver&apos;s browser through a temporary connection.
-        </p>
-        <p>
-          Files are not intentionally uploaded to or stored permanently on JaldiBhejo servers. Our signaling service may process temporary connection messages so two devices can discover and connect with each other.
-        </p>
-      </ContentSection>
+      <h2>2. WebRTC and File Sharing Privacy</h2>
+      <p>JaldiBhejo operates using WebRTC technology for peer-to-peer file sharing. <strong>We do not store your files on our servers.</strong> Files are transferred directly between the sender and the receiver. Once the transfer is complete or the browser window is closed, the connection is severed, and no trace of the transferred files remains on our infrastructure. We cannot access, view, or retain the content you share.</p>
 
-      <ContentSection title="Information we process">
-        <p>
-          The app may process temporary technical information such as room identifiers, signaling messages, connection state, browser type, device information, IP-related network information, and logs needed to operate, secure, or troubleshoot the service.
-        </p>
-        <p>
-          Some online tools, including browser-based image compression, may run locally in your browser. If a future tool requires server-side processing, that tool page should explain the processing clearly.
-        </p>
-      </ContentSection>
+      <h2>3. The Data We Collect</h2>
+      <p>We may collect, use, store and transfer different kinds of personal data about you, including:</p>
+      <ul>
+        <li><strong>Technical Data:</strong> Includes internet protocol (IP) address, browser type and version, time zone setting and location, browser plug-in types and versions, operating system and platform, and other technology on the devices you use to access this website.</li>
+        <li><strong>Usage Data:</strong> Includes information about how you use our website.</li>
+      </ul>
 
-      <ContentSection title="Files and text transfers">
-        <p>
-          JaldiBhejo does not provide long-term storage for transferred files or text. Receivers should only accept files from trusted senders.
-        </p>
-        <p>
-          You are responsible for the files you choose to send and for complying with applicable laws and rights.
-        </p>
-      </ContentSection>
+      <h2>4. Use of Cookies and Tracking Technologies</h2>
+      <p>Our website uses cookies and similar tracking technologies to distinguish you from other users of our website. This helps us to provide you with a good experience when you browse our website and allows us to improve our site.</p>
+      
+      <h2>5. Google AdSense and Third-Party Vendors</h2>
+      <p>We use Google AdSense to display advertisements on our website. Google, as a third-party vendor, uses cookies to serve ads on JaldiBhejo. Google's use of advertising cookies enables it and its partners to serve ads to our users based on their visit to our sites and/or other sites on the Internet.</p>
+      <ul>
+        <li>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to your website or other websites.</li>
+        <li>Google's use of advertising cookies enables it and its partners to serve ads to your users based on their visit to your sites and/or other sites on the Internet.</li>
+        <li>Users may opt-out of personalized advertising by visiting <a href="https://myadcenter.google.com/" target="_blank" rel="noopener noreferrer">Ads Settings</a>. Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://aboutads.info" target="_blank" rel="noopener noreferrer">www.aboutads.info</a>.</li>
+      </ul>
 
-      <ContentSection title="Cookies, Analytics, and Google AdSense">
-        <p>
-          JaldiBhejo may use cookies, local storage, Google Analytics, Google AdSense, and similar technologies to measure usage, improve performance, prevent abuse, and show advertisements.
-        </p>
-        <p>
-          Third-party vendors, including Google, may use cookies, web beacons, IP addresses, or similar technologies to serve ads, measure ad performance, and provide analytics. Users can control cookies through browser settings and Google ad settings.
-        </p>
-      </ContentSection>
+      <h2>6. Data Security</h2>
+      <p>We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used, or accessed in an unauthorized way, altered, or disclosed.</p>
 
-      <ContentSection title="Responsible use">
-        <p>
-          Users are responsible for the files they choose to send, receive, download, convert, or process. Do not use JaldiBhejo to share illegal content, malware, copyrighted material without permission, or private data without consent.
-        </p>
-      </ContentSection>
-
-      <ContentSection title="Contact">
-        <p>
-          For privacy questions, contact us at {siteConfig.email}.
-        </p>
-      </ContentSection>
-    </ContentPage>
+      <h2>7. Contact Us</h2>
+      <p>If you have any questions about this privacy policy or our privacy practices, please contact us at admin@jaldibhejo.com.</p>
+    </main>
   );
 }

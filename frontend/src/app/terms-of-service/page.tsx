@@ -1,66 +1,34 @@
-import type { Metadata } from "next";
-import { ContentPage, ContentSection } from "@/components/ContentPage";
-import { siteConfig } from "@/lib/site";
-
-export const metadata: Metadata = {
-  title: "Terms of Service",
-  description: "Read the terms that apply when using JaldiBhejo's browser file sharing app and utility tools.",
-  alternates: {
-    canonical: "/terms-of-service",
-  },
-};
+import React from 'react';
 
 export default function TermsOfServicePage() {
   return (
-    <ContentPage
-      eyebrow="Terms"
-      title="Terms & Conditions"
-      description="These terms describe acceptable use of JaldiBhejo and the responsibilities that apply when sending or receiving content."
-    >
-      <ContentSection title="Use of the service">
-        <p>
-          JaldiBhejo is owned by {siteConfig.owner}. By using {siteConfig.url}, you agree to these Terms & Conditions.
-        </p>
-        <p>
-          JaldiBhejo is provided for lawful file sharing and online tool workflows. You may use the service to send files, text, and process supported files through available tools.
-        </p>
-      </ContentSection>
+    <main className="max-w-4xl mx-auto py-12 px-4 prose prose-invert">
+      <h1>Terms of Service</h1>
+      <p>Last updated: {new Date().toLocaleDateString()}</p>
 
-      <ContentSection title="WebRTC and file storage">
-        <p>
-          JaldiBhejo uses WebRTC peer-to-peer technology for file sharing. Files are intended to transfer directly between devices where possible and are not intentionally stored permanently on JaldiBhejo servers.
-        </p>
-        <p>
-          Temporary connection data such as room codes, signaling messages, and IP-related network information may be used to establish and maintain a transfer session.
-        </p>
-      </ContentSection>
+      <h2>1. Acceptance of Terms</h2>
+      <p>By accessing and using JaldiBhejo, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.</p>
 
-      <ContentSection title="Your responsibilities">
-        <p>
-          You are responsible for the content you send, receive, or process. Do not use JaldiBhejo to share illegal content, malware, copyrighted material without permission, abusive content, or any content that violates another person&apos;s rights.
-        </p>
-        <p>
-          Only accept files from senders you trust. JaldiBhejo cannot guarantee that files from other users are safe or appropriate.
-        </p>
-      </ContentSection>
+      <h2>2. Description of Service</h2>
+      <p>JaldiBhejo provides users with access to a rich collection of resources, including various online tools and peer-to-peer file sharing capabilities utilizing WebRTC technology. You understand and agree that the service is provided "AS-IS" and that JaldiBhejo assumes no responsibility for the timeliness, deletion, mis-delivery, or failure to store any user communications or personalization settings.</p>
 
-      <ContentSection title="Availability">
-        <p>
-          We aim to keep JaldiBhejo reliable, but the service may be interrupted by browser limitations, network conditions, server maintenance, or technical issues outside our control.
-        </p>
-      </ContentSection>
+      <h2>3. User Conduct</h2>
+      <p>You agree to not use the service to:</p>
+      <ul>
+        <li>Upload, post, email, transmit, or otherwise make available any content that is unlawful, harmful, threatening, abusive, harassing, tortious, defamatory, vulgar, obscene, libelous, invasive of another's privacy, hateful, or racially, ethnically, or otherwise objectionable.</li>
+        <li>Harm minors in any way.</li>
+        <li>Impersonate any person or entity, or falsely state or otherwise misrepresent your affiliation with a person or entity.</li>
+        <li>Interfere with or disrupt the service or servers or networks connected to the service.</li>
+      </ul>
 
-      <ContentSection title="No warranties">
-        <p>
-          JaldiBhejo is provided as is. We do not guarantee that every transfer will complete, that every connection will be direct, or that files from other users are risk-free.
-        </p>
-      </ContentSection>
+      <h2>4. Intellectual Property</h2>
+      <p>All content included on the site, such as text, graphics, logos, button icons, images, audio clips, digital downloads, data compilations, and software, is the property of JaldiBhejo or its content suppliers and protected by international copyright laws.</p>
 
-      <ContentSection title="Contact">
-        <p>
-          Questions about these terms can be sent to {siteConfig.email}.
-        </p>
-      </ContentSection>
-    </ContentPage>
+      <h2>5. Modifications to Service</h2>
+      <p>JaldiBhejo reserves the right at any time and from time to time to modify or discontinue, temporarily or permanently, the service (or any part thereof) with or without notice. You agree that JaldiBhejo shall not be liable to you or to any third party for any modification, suspension, or discontinuance of the service.</p>
+
+      <h2>6. Governing Law</h2>
+      <p>These terms and conditions are governed by and construed in accordance with the laws, and you irrevocably submit to the exclusive jurisdiction of the courts in that State or location.</p>
+    </main>
   );
 }

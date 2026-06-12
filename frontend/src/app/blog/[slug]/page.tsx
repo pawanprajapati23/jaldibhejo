@@ -98,18 +98,25 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
       </header>
 
       <div className="space-y-9">
-        {post.sections.map((section) => (
-          <section key={section.heading}>
-            <h2 className="mb-4 text-2xl font-bold text-textMain">{section.heading}</h2>
-            <div className="space-y-4">
-              {section.body.map((paragraph) => (
-                <p key={paragraph} className="text-base leading-8 text-textMuted">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          </section>
-        ))}
+        {post.content ? (
+          <div 
+            className="prose prose-invert max-w-none text-base leading-8 text-textMuted [&>h2]:mb-4 [&>h2]:mt-8 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-textMain [&>p]:mb-4 [&>ul]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5"
+            dangerouslySetInnerHTML={{ __html: post.content }} 
+          />
+        ) : (
+          post.sections?.map((section) => (
+            <section key={section.heading}>
+              <h2 className="mb-4 text-2xl font-bold text-textMain">{section.heading}</h2>
+              <div className="space-y-4">
+                {section.body.map((paragraph) => (
+                  <p key={paragraph} className="text-base leading-8 text-textMuted">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
       </div>
     </article>
   );

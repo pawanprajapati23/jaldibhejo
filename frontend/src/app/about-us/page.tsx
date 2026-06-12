@@ -1,48 +1,26 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { ContentPage, ContentSection } from "@/components/ContentPage";
-import { siteConfig } from "@/lib/site";
-
-export const metadata: Metadata = {
-  title: "About Us",
-  description: "Learn about JaldiBhejo, a browser-based peer-to-peer file sharing app built for quick, private transfers.",
-  alternates: {
-    canonical: "/about-us",
-  },
-};
+import React from 'react';
 
 export default function AboutUsPage() {
   return (
-    <ContentPage
-      eyebrow="About JaldiBhejo"
-      title="Fast file sharing without unnecessary friction"
-      description="JaldiBhejo combines WebRTC peer-to-peer file sharing with useful online tools for images, PDFs, converters, developers, AI, and daily utilities."
-    >
-      <ContentSection title="What we build">
-        <p>
-          JaldiBhejo is a browser-based platform owned by {siteConfig.owner}. It is designed for quick handoffs between devices without account creation, long setup steps, or permanent public links.
-        </p>
-        <p>
-          The main USP is WebRTC-based peer-to-peer file sharing. Files are designed to move directly from one device to another and are not intentionally uploaded to or stored permanently on JaldiBhejo servers.
-        </p>
-      </ContentSection>
+    <main className="max-w-4xl mx-auto py-12 px-4 prose prose-invert">
+      <h1>About Us</h1>
+      
+      <h2>Welcome to JaldiBhejo</h2>
+      <p>JaldiBhejo was created with a simple yet powerful mission: to provide fast, private, and hassle-free tools and file sharing capabilities to users worldwide, without the friction of sign-ups or subscriptions.</p>
 
-      <ContentSection title="Our approach">
-        <p>
-          We prefer browser-native workflows where possible. File transfers use WebRTC data channels, while tools like image compression can run locally in the browser.
-        </p>
-        <p>
-          JaldiBhejo also provides online tools for images, PDFs, converters, developer utilities, AI utilities, and everyday productivity tasks.
-        </p>
-      </ContentSection>
+      <h2>Our Philosophy</h2>
+      <p>In an era where personal data is constantly harvested and services hide their best features behind paywalls, we believe in a different approach. We are committed to building a platform that respects your privacy and values your time.</p>
 
-      <ContentSection title="Useful links">
-        <p>
-          Read our <Link href="/blog" className="text-primary hover:text-primary/80">file sharing guides</Link>, try the{" "}
-          <Link href="/tools/compress-image" className="text-primary hover:text-primary/80">image compressor</Link>, or{" "}
-          <Link href="/contact" className="text-primary hover:text-primary/80">contact us</Link> with feedback.
-        </p>
-      </ContentSection>
-    </ContentPage>
+      <h2>What We Offer</h2>
+      <ul>
+        <li><strong>Privacy-First File Sharing:</strong> Utilizing WebRTC technology, our file sharing service creates a direct, peer-to-peer connection between sender and receiver. Your files never touch our servers, ensuring maximum privacy and security.</li>
+        <li><strong>Local Processing:</strong> Many of our utility tools leverage cutting-edge WebAssembly (Wasm) technology to process your files directly within your browser. This means your sensitive data stays on your device.</li>
+        <li><strong>No Sign-Ups Required:</strong> We don't need your email, your name, or your phone number. You can use JaldiBhejo instantly, completely anonymously.</li>
+        <li><strong>Fast & Efficient:</strong> "Jaldi Bhejo" translates to "Send Quickly". We optimize our tools to be as lightweight and fast as possible.</li>
+      </ul>
+
+      <h2>Our Commitment</h2>
+      <p>We are dedicated to maintaining JaldiBhejo as a free, accessible, and user-centric platform. We continually explore new technologies to bring you the best and most secure web-based tools available.</p>
+    </main>
   );
 }
