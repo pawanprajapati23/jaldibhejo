@@ -21,6 +21,7 @@ export class WebRTCEngine {
   private lastUpdateBytes = 0;
   private lastUpdateTime = 0;
   private speedInterval: any = null;
+  private pingInterval: any = null;
 
   private iceCandidateBuffer: any[] = [];
   
@@ -195,6 +196,20 @@ export class WebRTCEngine {
   }
 
   private initiatePeerConnection(isInitiator: boolean, roomId: string, peerId: string) {
+    if (this.peerConnection) {
+        this.peerConnection.onicecandidate = null;
+        this.peerConnection.onconnectionstatechange = null;
+        this.peerConnection.oniceconnectionstatechange = null;
+        this.peerConnection.ontrack = null;
+        this.peerConnection.close();
+    }
+    if (this.dataChannel) {
+        this.dataChannel.onmessage = null;
+        this.dataChannel.onopen = null;
+        this.dataChannel.onclose = null;
+        this.dataChannel.close();
+    }
+
     this.peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -241,8 +256,16 @@ export class WebRTCEngine {
       if (this.peerConnection?.connectionState === 'connected') {
         if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
         useTransferStore.getState().setConnectionState('connected');
-      } else if (this.peerConnection?.connectionState === 'failed') {
-        useTransferStore.getState().setError('Connection failed. Please refresh and try again.');
+      } else if (this.peerConnection?.connectionState === 'failed' || this.peerConnection?.connectionState === 'disconnected') {
+        if (this.peerConnection?.connectionState === 'failed') {
+            useTransferStore.getState().setError('Connection failed. Attempting to reconnect...');
+            if (isInitiator) {
+                setTimeout(() => {
+                    console.log("Auto-reconnecting...");
+                    this.initiatePeerConnection(true, roomId, peerId);
+                }, 2000);
+            }
+        }
       }
     };
 
@@ -252,7 +275,12 @@ export class WebRTCEngine {
         if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
         useTransferStore.getState().setConnectionState('connected');
       } else if (state === 'failed') {
-        useTransferStore.getState().setError('Connection failed. Please refresh and try again.');
+        useTransferStore.getState().setError('Connection failed. Attempting to reconnect...');
+        if (isInitiator) {
+            setTimeout(() => {
+                this.initiatePeerConnection(true, roomId, peerId);
+            }, 2000);
+        }
       }
     };
 
@@ -290,9 +318,6 @@ export class WebRTCEngine {
         this.dataChannel = event.channel;
         this.setupDataChannel();
       };
-      
-      // If we are not the initiator, but we have a screen to share (which is unlikely in current UI but possible)
-      // the tracks are already added above, they will be negotiated when we createAnswer.
     }
   }
 
@@ -304,14 +329,21 @@ export class WebRTCEngine {
 
     this.dataChannel.onopen = () => {
       console.log('Data channel open');
+      this.startPing();
       if (useTransferStore.getState().role === 'sender' && !useTransferStore.getState().localStream) {
         this.startFileTransfer();
       }
     };
 
+    this.dataChannel.onclose = () => {
+      this.stopPing();
+    };
+
     this.dataChannel.onmessage = (event) => {
       if (typeof event.data === 'string') {
         const msg = JSON.parse(event.data);
+        if (msg.type === 'ping') return;
+        
         if (msg.type === 'metadata') {
           if (this.currentTransferId !== msg.transferId) {
             this.receivedBuffers = [];
@@ -343,6 +375,19 @@ export class WebRTCEngine {
     };
   }
 
+  private startPing() {
+    this.stopPing();
+    this.pingInterval = setInterval(() => {
+      if (this.dataChannel && this.dataChannel.readyState === 'open') {
+        this.dataChannel.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 5000);
+  }
+
+  private stopPing() {
+    if (this.pingInterval) { clearInterval(this.pingInterval); this.pingInterval = null; }
+  }
+
   public async startFileTransfer() {
     const state = useTransferStore.getState();
     const { textPayload, files } = state;
@@ -357,6 +402,19 @@ export class WebRTCEngine {
 
     if (files.length === 0) return;
     state.setConnectionState('transferring');
+
+    // If we already have a pending transfer, just re-send metadata to resume
+    if (this.pendingFile && this.pendingTransferId) {
+      this.dataChannel.send(JSON.stringify({
+        type: 'metadata',
+        transferId: this.pendingTransferId,
+        name: this.pendingFileName,
+        size: this.pendingFile.size,
+        fileType: this.pendingIsZip ? 'application/zip' : this.pendingFile.type,
+        isZip: this.pendingIsZip
+      }));
+      return;
+    }
 
     let fileToTransfer: Blob | File;
     let fileName = '';
@@ -466,6 +524,7 @@ export class WebRTCEngine {
   }
 
   private cleanup() {
+    this.stopPing();
     this.stopSpeedCalculation();
     if (this.dataChannel) { this.dataChannel.close(); this.dataChannel = null; }
     if (this.peerConnection) { this.peerConnection.close(); this.peerConnection = null; }

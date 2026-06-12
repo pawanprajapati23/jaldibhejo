@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import Script from "next/script";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { siteConfig } from "@/lib/site";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { GlobalDropzone } from "@/components/GlobalDropzone";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -67,13 +73,35 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`bg-background text-textMain antialiased selection:bg-primary/20 selection:text-primary`}>
-        <SiteHeader />
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-G84D3MPBVZ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-        <main className="min-h-screen flex flex-col items-center justify-center p-6 pt-24">
-          {children}
-        </main>
-        <SiteFooter />
+            gtag('config', 'G-G84D3MPBVZ');
+          `}
+        </Script>
+      </head>
+      <body className={`bg-background text-textMain antialiased selection:bg-primary/20 selection:text-primary`}>
+        <ThemeProvider>
+          <GlobalDropzone>
+            <SiteHeader />
+
+            <main className="min-h-screen flex flex-col items-center justify-center p-6 pt-24">
+              {children}
+            </main>
+            <SiteFooter />
+          </GlobalDropzone>
+        </ThemeProvider>
+        <Suspense fallback={null}>
+          <ServiceWorkerRegister />
+        </Suspense>
       </body>
     </html>
   );

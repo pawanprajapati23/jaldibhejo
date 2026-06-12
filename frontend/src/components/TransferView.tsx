@@ -154,6 +154,20 @@ export function TransferView() {
   }, [files, role]);
 
   useEffect(() => {
+    if (connectionState === "completed") {
+      // Haptic feedback for mobile devices
+      if ("vibrate" in navigator) {
+        navigator.vibrate([100, 30, 100]);
+      }
+      
+      // Success sound (using a simple Audio object if you add a success.mp3 to public folder)
+      // For now, we just log it. You can place success.mp3 in /public/
+      const audio = new Audio('/success.mp3');
+      audio.play().catch(() => {
+        // Ignore errors if file doesn't exist or interaction not allowed
+      });
+    }
+
     if (role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode && !isScreenMode) {
       setIsFileReadyToSave(false);
       // Short delay for "Verifying" animation, then auto-download

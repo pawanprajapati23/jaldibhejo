@@ -9,15 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#121212", // Clean dark gray
-        surface: "#1A1A1A", // Slightly lighter for cards
-        surfaceHover: "#242424",
-        primary: "#3B82F6", // Fast blue
-        secondary: "#8B5CF6",
-        accent: "#10B981",
-        border: "#333333", // Simple solid borders
-        textMain: "#F3F4F6",
-        textMuted: "#9CA3AF",
+        background: "var(--background)",
+        surface: "var(--surface)",
+        surfaceHover: "var(--surface-hover)",
+        primary: "var(--primary)",
+        secondary: "var(--secondary)",
+        accent: "var(--accent)",
+        border: "var(--border)",
+        textMain: "var(--text-main)",
+        textMuted: "var(--text-muted)",
       }
     },
   },

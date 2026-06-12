@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { BookOpen, ChevronDown, Code2, FileText, ImageIcon, Menu, Send, Sparkles, Wrench, X } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 const toolLinks = [
   { href: "/image-tools", label: "Image Tools", description: "Compress, resize, and convert images.", icon: ImageIcon },
@@ -73,15 +74,18 @@ export function SiteHeader() {
           </div>
         </nav>
 
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen((value) => !value)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-textMain transition-colors hover:bg-surfaceHover md:hidden"
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={isMenuOpen}
-        >
-          {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((value) => !value)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-textMain transition-colors hover:bg-surfaceHover md:hidden"
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       {isMenuOpen && (
