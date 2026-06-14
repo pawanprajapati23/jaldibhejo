@@ -1,9 +1,10 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
-import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp, Maximize, Minimize, Mic, MicOff } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp, Maximize, Minimize, Mic, MicOff, Coffee } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { webrtcEngine } from "@/lib/WebRTCEngine";
 import { useDropzone } from "react-dropzone";
+import { startSoundBase64, successSoundBase64 } from "@/lib/sounds";
 
 function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -77,6 +78,7 @@ export function TransferView() {
     roomId, 
     files, 
     incomingFile,
+    incomingThumbnail,
     textPayload,
     incomingText,
     localStream,
@@ -153,21 +155,23 @@ export function TransferView() {
     }
   }, [files, role]);
 
-  useEffect(() => {
-    if (connectionState === "completed") {
-      // Haptic feedback for mobile devices
-      if ("vibrate" in navigator) {
-        navigator.vibrate([100, 30, 100]);
-      }
-      
-      // Success sound (using a simple Audio object if you add a success.mp3 to public folder)
-      // For now, we just log it. You can place success.mp3 in /public/
-      const audio = new Audio('/success.mp3');
-      audio.play().catch(() => {
-        // Ignore errors if file doesn't exist or interaction not allowed
-      });
-    }
+  const prevConnectionState = useRef<string>("disconnected");
 
+  useEffect(() => {
+    if (prevConnectionState.current !== "transferring" && connectionState === "transferring") {
+      const audio = new Audio(startSoundBase64);
+      audio.play().catch(() => {});
+      if ("vibrate" in navigator) navigator.vibrate([50]);
+    }
+    if (prevConnectionState.current !== "completed" && connectionState === "completed") {
+      const audio = new Audio(successSoundBase64);
+      audio.play().catch(() => {});
+      if ("vibrate" in navigator) navigator.vibrate([100, 30, 100]);
+    }
+    prevConnectionState.current = connectionState;
+  }, [connectionState]);
+
+  useEffect(() => {
     if (role === "receiver" && connectionState === "completed" && incomingFile && downloadedFileUrl && !isTextMode && !isScreenMode) {
       setIsFileReadyToSave(false);
       // Short delay for "Verifying" animation, then auto-download
@@ -309,23 +313,23 @@ export function TransferView() {
                 </>
               )}
               
-              {!isTextMode && fileToDisplay && connectionState !== "connecting" && (
+              {!isTextMode && (fileToDisplay || incomingThumbnail) && connectionState !== "connecting" && (
                 <div className="flex flex-col items-center w-full">
-                  {displayImageUrl && (
+                  {(displayImageUrl || incomingThumbnail) && (
                     <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-40 h-40 flex-shrink-0 bg-surface">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={displayImageUrl} alt="Preview" className="object-cover w-full h-full" />
+                      <img src={displayImageUrl || incomingThumbnail || ""} alt="Preview" className="object-cover w-full h-full" />
                     </div>
                   )}
                   <div className="bg-surface border border-border rounded-xl p-4 mb-8 text-left flex items-center gap-4 w-full max-w-md mx-auto">
-                    {!displayImageUrl && (
+                    {!(displayImageUrl || incomingThumbnail) && (
                       <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center flex-shrink-0">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-textMuted"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-base truncate text-textMain">{fileToDisplay.name}</p>
-                      <p className="text-xs text-textMuted mt-0.5">{(fileToDisplay.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      <p className="font-semibold text-base truncate text-textMain">{fileToDisplay?.name || "Incoming File..."}</p>
+                      <p className="text-xs text-textMuted mt-0.5">{fileToDisplay ? (fileToDisplay.size / (1024 * 1024)).toFixed(2) + " MB" : "Calculating..."}</p>
                     </div>
                   </div>
                 </div>
@@ -369,6 +373,26 @@ export function TransferView() {
             <CheckCircle2 size={32} strokeWidth={2} />
           </div>
           <h2 className="text-3xl font-bold mb-3 text-textMain">Transfer Complete</h2>
+
+          <div className="mt-8 mb-8 p-6 bg-surface border border-border rounded-2xl max-w-md mx-auto animate-in fade-in zoom-in delay-300 duration-700">
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-12 h-12 rounded-full bg-[#FFDD00] flex items-center justify-center text-black flex-shrink-0">
+                <Coffee size={24} fill="currentColor" />
+              </div>
+              <div>
+                <h4 className="font-bold text-textMain">Enjoying JaldiBhejo?</h4>
+                <p className="text-xs text-textMuted mt-1">If this tool saved you time, consider supporting the developer with a small coffee!</p>
+              </div>
+            </div>
+            <a 
+              href="https://www.buymeacoffee.com/pawanprajapati" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 bg-[#FFDD00] text-black font-bold rounded-xl hover:opacity-90 transition-opacity text-sm"
+            >
+              Support the Project
+            </a>
+          </div>
 
           {role === "sender" ? (
              <p className="text-textMuted text-sm mb-8">

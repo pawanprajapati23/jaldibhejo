@@ -353,6 +353,7 @@ export class WebRTCEngine {
             this.expectedSize = msg.size;
           }
           useTransferStore.getState().setIncomingFile({ name: msg.name, size: msg.size, type: msg.fileType, isZip: msg.isZip });
+          useTransferStore.getState().setIncomingThumbnail(msg.thumbnail || null);
           useTransferStore.getState().setConnectionState('transferring');
           this.startSpeedCalculation();
           if (this.dataChannel && this.dataChannel.readyState === 'open') {
@@ -437,13 +438,45 @@ export class WebRTCEngine {
     this.pendingIsZip = isZip;
     this.pendingTransferId = transferId;
 
+    let thumbnail: string | null = null;
+    if (files.length === 1 && files[0].type.startsWith('image/')) {
+      try {
+        const file = files[0];
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+          img.src = url;
+        });
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 150;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+        } else {
+          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        thumbnail = canvas.toDataURL('image/jpeg', 0.5);
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error("Thumbnail generation failed", e);
+      }
+    }
+
     this.dataChannel.send(JSON.stringify({
       type: 'metadata',
       transferId,
       name: fileName,
       size: fileToTransfer.size,
       fileType: isZip ? 'application/zip' : fileToTransfer.type,
-      isZip
+      isZip,
+      thumbnail
     }));
   }
 

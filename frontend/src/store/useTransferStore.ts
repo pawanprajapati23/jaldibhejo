@@ -20,6 +20,7 @@ interface TransferState {
   textPayload: string | null;
   incomingFile: FileMetadata | null;
   incomingText: string | null;
+  incomingThumbnail: string | null;
   downloadedFileUrl: string | null;
   progress: number;
   transferSpeed: string;
@@ -35,6 +36,7 @@ interface TransferState {
   setTextPayload: (text: string | null) => void;
   setIncomingFile: (file: FileMetadata | null) => void;
   setIncomingText: (text: string | null) => void;
+  setIncomingThumbnail: (thumbnail: string | null) => void;
   setDownloadedFileUrl: (url: string | null) => void;
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
@@ -54,6 +56,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   textPayload: null,
   incomingFile: null,
   incomingText: null,
+  incomingThumbnail: null,
   downloadedFileUrl: null,
   progress: 0,
   transferSpeed: '0 B/s',
@@ -69,6 +72,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   setTextPayload: (textPayload) => set({ textPayload }),
   setIncomingFile: (incomingFile) => set({ incomingFile }),
   setIncomingText: (incomingText) => set({ incomingText }),
+  setIncomingThumbnail: (incomingThumbnail) => set({ incomingThumbnail }),
   setDownloadedFileUrl: (downloadedFileUrl) => set({ downloadedFileUrl }),
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
@@ -111,6 +115,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       textPayload: null,
       incomingFile: null,
       incomingText: null,
+      incomingThumbnail: null,
       downloadedFileUrl: null,
       progress: 0,
       transferSpeed: '0 B/s',

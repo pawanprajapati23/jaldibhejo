@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
+import { Coffee } from "lucide-react";
 
 const footerLinks = [
   { href: "/file-sharing", label: "File Sharing" },
@@ -19,8 +20,19 @@ const footerLinks = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background px-6 py-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 text-sm text-textMuted md:flex-row md:items-center md:justify-between">
-        <p>© {new Date().getFullYear()} {siteConfig.name}. Owned by {siteConfig.owner}.</p>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 text-sm text-textMuted md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4">
+          <p>© {new Date().getFullYear()} {siteConfig.name}. Owned by {siteConfig.owner}.</p>
+          <a 
+            href="https://www.buymeacoffee.com/pawanprajapati" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 w-max px-4 py-2 bg-[#FFDD00] text-black font-bold rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <Coffee size={18} fill="currentColor" />
+            Buy me a coffee
+          </a>
+        </div>
         <nav className="flex flex-wrap gap-x-4 gap-y-2">
           {footerLinks.map((link) => (
             <Link key={link.href} href={link.href} className="transition-colors hover:text-textMain">
