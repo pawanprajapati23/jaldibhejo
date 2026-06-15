@@ -53,6 +53,10 @@ export const metadata: Metadata = {
     title: "JaldiBhejo - Send Anything Instantly",
     description: "Fast WebRTC peer-to-peer file sharing with free online tools.",
   },
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
   robots: {
     index: true,
     follow: true,

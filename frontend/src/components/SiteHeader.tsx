@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
-import { BookOpen, ChevronDown, Code2, FileText, ImageIcon, Menu, Send, Sparkles, Wrench, X } from "lucide-react";
+import { BookOpen, ChevronDown, Code2, FileText, ImageIcon, Menu, Sparkles, Wrench, X } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
 const toolLinks = [
@@ -27,8 +28,8 @@ export function SiteHeader() {
     <header className="fixed top-0 w-full z-20 border-b border-border bg-background/95 backdrop-blur-md">
       <div className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-5 sm:px-6">
         <Link href="/" className="flex items-center gap-3" aria-label="JaldiBhejo home" onClick={() => setIsMenuOpen(false)}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
-            <Send size={18} strokeWidth={2.5} />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white overflow-hidden">
+            <Image src="/logo.png" alt="JaldiBhejo Logo" width={36} height={36} className="object-cover" />
           </div>
           <span className="text-lg font-bold tracking-wide text-white">JaldiBhejo</span>
         </Link>
