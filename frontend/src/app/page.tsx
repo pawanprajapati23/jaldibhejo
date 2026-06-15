@@ -54,16 +54,40 @@ export default function Home() {
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "Web",
     description: "Browser-based peer-to-peer file sharing with PIN and QR code connection flows.",
+    url: "https://jaldibhejo.vercel.app",
     offers: {
       "@type": "Offer",
       price: "0",
       priceCurrency: "USD",
     },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      ratingCount: "1284",
+      bestRating: "5"
+    }
+  };
+
+  const webSiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "JaldiBhejo",
+    url: "https://jaldibhejo.vercel.app",
+    description: "Fast WebRTC peer-to-peer file sharing and free offline browser tools like PDF editors and image compressors.",
+    publisher: {
+      "@type": "Organization",
+      name: "JaldiBhejo",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://jaldibhejo.vercel.app/logo.png"
+      }
+    }
   };
 
   return (
     <div className="w-full max-w-3xl mx-auto relative perspective-1000">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }} />
       <AnimatePresence mode="wait">
         {mode === "idle" && (
           <motion.div

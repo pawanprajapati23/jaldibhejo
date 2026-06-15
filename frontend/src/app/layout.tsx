@@ -47,11 +47,20 @@ export const metadata: Metadata = {
     siteName: "JaldiBhejo",
     title: "JaldiBhejo - Send Anything Instantly",
     description: "Fast WebRTC peer-to-peer file sharing with image, PDF, converter, developer, AI, and utility tools.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "JaldiBhejo Logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "JaldiBhejo - Send Anything Instantly",
     description: "Fast WebRTC peer-to-peer file sharing with free online tools.",
+    images: ["/logo.png"],
   },
   icons: {
     icon: '/logo.png',

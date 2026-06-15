@@ -49,6 +49,33 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://jaldibhejo.vercel.app";
+
+  const breadcrumbListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": siteUrl
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": `${siteUrl}/blog`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": post.title,
+        "item": `${siteUrl}/blog/${post.slug}`
+      }
+    ]
+  };
+
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -68,6 +95,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <article className="w-full max-w-3xl py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbListJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <Link href="/blog" className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-textMuted transition-colors hover:text-textMain">
         <ArrowLeft size={16} />
