@@ -23,15 +23,13 @@ export function SiteFooter() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 text-sm text-textMuted md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-4">
           <p>© {new Date().getFullYear()} {siteConfig.name}. Owned by {siteConfig.owner}.</p>
-          <a 
-            href="https://www.buymeacoffee.com/pawanprajapati" 
-            target="_blank" 
-            rel="noopener noreferrer"
+          <Link 
+            href="/support" 
             className="flex items-center gap-2 w-max px-4 py-2 bg-[#FFDD00] text-black font-bold rounded-lg hover:opacity-90 transition-opacity"
           >
             <Coffee size={18} fill="currentColor" />
-            Buy me a coffee
-          </a>
+            Support the project
+          </Link>
         </div>
         <nav className="flex flex-wrap gap-x-4 gap-y-2">
           {footerLinks.map((link) => (

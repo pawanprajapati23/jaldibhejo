@@ -6,6 +6,7 @@ import { webrtcEngine } from "@/lib/WebRTCEngine";
 import { useDropzone } from "react-dropzone";
 import { startSoundBase64, successSoundBase64 } from "@/lib/sounds";
 import { uploadToCloud } from "@/lib/cloudStorage";
+import Link from "next/link";
 
 
 function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }) {
@@ -433,14 +434,12 @@ export function TransferView() {
                 <p className="text-xs text-textMuted mt-1">If this tool saved you time, consider supporting the developer with a small coffee!</p>
               </div>
             </div>
-            <a 
-              href="https://www.buymeacoffee.com/pawanprajapati" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <Link 
+              href="/support" 
               className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 bg-[#FFDD00] text-black font-bold rounded-xl hover:opacity-90 transition-opacity text-sm"
             >
               Support the Project
-            </a>
+            </Link>
           </div>
 
           {role === "sender" ? (
