@@ -8,11 +8,11 @@ type ToolWorkspaceProps = {
 };
 
 // Dynamic imports for all tools
-const AiSummarizerTool = dynamic(() => import("./tools/AiSummarizerTool"));
+const AiSummarizerTool = dynamic(() => import("./tools/AiSummarizerTool").then(mod => mod.AiSummarizerTool));
 const AiTitleGeneratorTool = dynamic(() => import("./tools/AiTitleGeneratorTool"));
 const BackgroundRemoverTool = dynamic(() => import("./tools/BackgroundRemoverTool"));
 const ImageFormatTool = dynamic(() => import("./tools/ImageFormatTool"));
-const ImageResizerTool = dynamic(() => import("./tools/ImageResizerTool"));
+const ImageResizerTool = dynamic(() => import("./tools/ImageResizerTool").then(mod => mod.ImageResizerTool));
 const ImageToPdfTool = dynamic(() => import("./tools/ImageToPdfTool"));
 const JsonFormatterTool = dynamic(() => import("./tools/JsonFormatterTool"));
 const PasswordTool = dynamic(() => import("./tools/PasswordTool"));
@@ -22,7 +22,7 @@ const PdfSplitTool = dynamic(() => import("./tools/PdfSplitTool"));
 const PdfSignerTool = dynamic(() => import("./tools/PdfSignerTool").then(mod => mod.PdfSignerTool));
 const PdfToWordTool = dynamic(() => import("./tools/PdfToWordTool"));
 const PdfToImageTool = dynamic(() => import("./tools/PdfToImageTool"));
-const QrCodeTool = dynamic(() => import("./tools/QrCodeTool"));
+const QrCodeTool = dynamic(() => import("./tools/QrCodeTool").then(mod => mod.QrCodeTool));
 const SimpleFormatterTool = dynamic(() => import("./tools/SimpleFormatterTool"));
 const TextCaseTool = dynamic(() => import("./tools/TextCaseTool"));
 const TextTransformTool = dynamic(() => import("./tools/TextTransformTool"));
