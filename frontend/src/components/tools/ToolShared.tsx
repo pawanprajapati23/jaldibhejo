@@ -305,13 +305,13 @@ export function ToolButton({ children, onClick, disabled }: { children: ReactNod
   );
 }
 
-export function SecondaryButton({ children, onClick, disabled }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {
+export function SecondaryButton({ children, onClick, disabled, className = "" }: { children: ReactNode; onClick: () => void; disabled?: boolean; className?: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-semibold text-textMain transition-colors hover:bg-surfaceHover disabled:cursor-not-allowed disabled:opacity-50"
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-semibold text-textMain transition-colors hover:bg-surfaceHover disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </button>

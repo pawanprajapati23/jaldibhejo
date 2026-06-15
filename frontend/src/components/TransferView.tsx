@@ -1,10 +1,12 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import { QRCodeSVG } from "qrcode.react";
-import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp, Maximize, Minimize, Mic, MicOff, Coffee } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Smartphone, ShieldCheck, Download, Home, Plus, UploadCloud, MessageSquareText, MonitorUp, Maximize, Minimize, Mic, MicOff, Coffee, Link as LinkIcon, Copy } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { webrtcEngine } from "@/lib/WebRTCEngine";
 import { useDropzone } from "react-dropzone";
 import { startSoundBase64, successSoundBase64 } from "@/lib/sounds";
+import { uploadToCloud } from "@/lib/cloudStorage";
+
 
 function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -100,6 +102,10 @@ export function TransferView() {
   const [showSendText, setShowSendText] = useState(false);
   const [newText, setNewText] = useState("");
   const [isMuted, setIsMuted] = useState(false);
+  
+  const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
+  const [cloudProgress, setCloudProgress] = useState(0);
+  const [cloudLink, setCloudLink] = useState<string | null>(null);
 
   const toggleMute = () => {
     if (localStream) {
@@ -235,10 +241,53 @@ export function TransferView() {
             {roomId}
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-textMuted bg-surface border border-border py-2 px-4 rounded-full w-max mx-auto">
+          <div className="flex items-center justify-center gap-2 text-textMuted bg-surface border border-border py-2 px-4 rounded-full w-max mx-auto mb-8">
             <Smartphone size={16} />
             <span className="text-sm">Waiting for receiver{dots}</span>
           </div>
+
+          {!isScreenMode && !isTextMode && files.length > 0 && files.reduce((acc, f) => acc + f.size, 0) <= 50 * 1024 * 1024 && !cloudLink && (
+            <div className="mt-8 pt-8 border-t border-border">
+              <h3 className="text-lg font-bold text-textMain mb-2">Receiver Offline?</h3>
+              <p className="text-sm text-textMuted mb-4">Generate an expirable cloud link valid for 10 minutes. Max 50MB.</p>
+              
+              <button
+                onClick={async () => {
+                  setIsUploadingToCloud(true);
+                  const res = await uploadToCloud(files, setCloudProgress);
+                  if (res.link) setCloudLink(res.link);
+                  setIsUploadingToCloud(false);
+                }}
+                disabled={isUploadingToCloud}
+                className="w-full px-5 py-3 bg-surface border border-border hover:border-primary hover:bg-surfaceHover text-textMain rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+              >
+                {isUploadingToCloud ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />}
+                {isUploadingToCloud ? `Uploading... ${cloudProgress}%` : "Generate Cloud Link"}
+              </button>
+            </div>
+          )}
+
+          {cloudLink && (
+            <div className="mt-8 pt-8 border-t border-border animate-in zoom-in duration-300">
+              <h3 className="text-lg font-bold text-textMain mb-2">Link Generated!</h3>
+              <p className="text-sm text-textMuted mb-4">Anyone with this link can download the files for the next 10 minutes.</p>
+              <div className="flex items-center bg-background border border-border rounded-xl p-2 pl-4">
+                <span className="flex-1 text-sm text-textMain truncate mr-2 font-mono select-all">
+                  {cloudLink}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(cloudLink);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="p-2 bg-surface hover:bg-surfaceHover rounded-lg transition-colors"
+                >
+                  {copied ? <CheckCircle2 size={16} className="text-green-500" /> : <Copy size={16} className="text-textMuted" />}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -19,8 +19,9 @@ const PasswordTool = dynamic(() => import("./tools/PasswordTool"));
 const PdfCompressTool = dynamic(() => import("./tools/PdfCompressTool"));
 const PdfMergeTool = dynamic(() => import("./tools/PdfMergeTool"));
 const PdfSplitTool = dynamic(() => import("./tools/PdfSplitTool"));
-const PdfToImageTool = dynamic(() => import("./tools/PdfToImageTool"));
+const PdfSignerTool = dynamic(() => import("./tools/PdfSignerTool").then(mod => mod.PdfSignerTool));
 const PdfToWordTool = dynamic(() => import("./tools/PdfToWordTool"));
+const PdfToImageTool = dynamic(() => import("./tools/PdfToImageTool"));
 const QrCodeTool = dynamic(() => import("./tools/QrCodeTool"));
 const SimpleFormatterTool = dynamic(() => import("./tools/SimpleFormatterTool"));
 const TextCaseTool = dynamic(() => import("./tools/TextCaseTool"));
@@ -40,6 +41,7 @@ export function ToolWorkspace({ tool }: ToolWorkspaceProps) {
   if (tool.slug === "image-to-pdf") return <ImageToPdfTool />;
   if (tool.slug === "merge-pdf") return <PdfMergeTool />;
   if (tool.slug === "split-pdf") return <PdfSplitTool />;
+  if (tool.slug === "sign-pdf") return <PdfSignerTool />;
   if (tool.slug === "compress-pdf") return <PdfCompressTool />;
   if (tool.slug === "pdf-to-word") return <PdfToWordTool />;
   if (tool.slug === "word-to-pdf") return <WordToPdfTool />;

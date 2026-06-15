@@ -260,6 +260,27 @@ export const tools: ToolInfo[] = [
     "seoArticle": "<h3>What is the Split PDF Online?</h3>\n<p>The Split PDF is an advanced, browser-based utility designed to help users extract pages or split one pdf into smaller files. With the growing need for fast, secure, and privacy-respecting online tools, this solution leverages modern web technologies like WebAssembly and local browser processing. This means that when you use our split PDF online, your files never leave your device, ensuring complete data privacy and security.</p>\n<h3>Why Use a Split PDF?</h3>\n<p>In today's fast-paced digital world, efficiency and security are paramount. Traditional online tools often require you to upload sensitive files to remote servers, which poses a significant privacy risk and can be slow depending on your internet connection. By utilizing local processing, our Split PDF offers instantaneous results. Benefits include:</p>\n<ul>\n  <li><strong>Smaller documents</strong>: Experience seamless operations without the wait.</li>\n  <li><strong>Easy page extraction</strong>: Experience seamless operations without the wait.</li>\n  <li><strong>Cleaner sharing</strong>: Experience seamless operations without the wait.</li>\n  <li><strong>100% Privacy</strong>: No server uploads mean your data remains yours.</li>\n  <li><strong>Cross-Platform Compatibility</strong>: Works perfectly on Windows, Mac, Linux, and mobile devices without any installation.</li>\n</ul>\n<h3>How It Works: The Technology Behind the Split PDF</h3>\n<p>Under the hood, this tool is powered by cutting-edge web technologies. For many of our intensive processing tasks, we utilize WebAssembly (Wasm), which allows code written in languages like C++ or Rust to run directly in your browser at near-native speeds. This is how we can offer a powerful split PDF online that rivals desktop applications in performance. The entire process—from parsing your input to generating the output—happens within the secure sandbox of your browser.</p>\n<h3>Step-by-Step Guide: How to Use the Split PDF Online</h3>\n<p>Using the tool is incredibly straightforward, designed with a user-friendly interface that requires no technical expertise. Here is how you can get started:</p>\n<ol>\n  <li>Upload a PDF.</li>\n  <li>Choose pages to extract.</li>\n  <li>Split the document.</li>\n  <li>Download selected pages.</li>\n</ol>\n<p>Once completed, your output is immediately available for download. There are no hidden fees, no watermarks, and no usage limits.</p>\n<h3>Common Use Cases for a split PDF online</h3>\n<p>This tool is highly versatile and caters to a wide range of users. Whether you are a student preparing an assignment, a professional handling confidential business documents, a developer optimizing web assets, or simply someone looking to manage their digital files more effectively, the Split PDF is tailored for you. By eliminating the friction of downloading heavy software, it empowers you to accomplish your tasks quickly and securely.</p>\n<h3>Conclusion</h3>\n<p>Embrace the future of web utilities with our secure, fast, and reliable Split PDF Online. By prioritizing your privacy through local processing and delivering top-tier performance via modern web standards, we provide a seamless experience that respects both your time and your data. Try the split PDF online today and experience the difference of truly local, browser-based file management.</p>"
   },
   {
+    "slug": "sign-pdf",
+    "name": "Sign PDF Offline",
+    "category": "pdf",
+    "description": "Draw your signature and append it to your PDF.",
+    "keyword": "sign PDF online",
+    "title": "Sign PDF Offline - Private eSign",
+    "metaDescription": "Sign PDF documents online entirely in your browser without uploading them to any server.",
+    "howToUse": [
+      "Upload a PDF.",
+      "Draw your signature.",
+      "Apply to the document.",
+      "Download the signed PDF."
+    ],
+    "benefits": [
+      "True offline processing",
+      "No data saved to servers",
+      "High-quality signature extraction"
+    ],
+    "seoArticle": "<h3>The Need for Secure PDF Signing</h3><p>Signing documents online has become a daily necessity. However, uploading sensitive documents—like contracts, tax forms, or legal agreements—to a third-party server poses a significant privacy risk. Our True Offline PDF Signer solves this by keeping your document completely on your device.</p><h3>How It Works Without Servers</h3><p>When you upload a PDF and draw your signature, the tool uses the <code>pdf-lib</code> library to manipulate the PDF structure directly in your browser's memory. It converts your drawn signature into a transparent image and mathematically embeds it into the PDF page. The final signed document is generated locally and saved straight to your hard drive.</p><h3>Ensuring Data Privacy</h3><p>Because the entire process happens client-side, we never see your signature or your document. There is no database storing your sensitive information, making this one of the safest ways to electronically sign a document on the web.</p>"
+  },
+  {
     "slug": "compress-pdf",
     "name": "Compress PDF",
     "category": "pdf",
