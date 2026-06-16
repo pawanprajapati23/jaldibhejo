@@ -339,6 +339,32 @@ export function TransferView() {
             </div>
           )}
 
+          {connectionState === "connected" && role === "sender" && files.length === 0 && !textPayload && (
+            <div className="flex flex-col items-center mb-8 animate-in fade-in zoom-in duration-300 w-full max-w-md mx-auto">
+              <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-6">
+                <UploadCloud size={40} />
+              </div>
+              <h2 className="text-2xl font-bold text-textMain mb-2">Ready to Send</h2>
+              <p className="text-textMuted text-sm mb-8 px-4 text-center">You are connected to the requester. Tap the button below or drop files anywhere to start sharing.</p>
+              <button 
+                onClick={openFileDialog}
+                className="px-10 py-4 bg-primary text-white rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95"
+              >
+                Select Files to Send
+              </button>
+            </div>
+          )}
+
+          {connectionState === "connected" && role === "receiver" && !incomingFile && !incomingText && (
+            <div className="flex flex-col items-center mb-8 animate-in fade-in zoom-in duration-300">
+              <div className="w-16 h-16 rounded-full bg-surface border border-border text-green-500 flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <ShieldCheck size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-textMain mb-2">Securely Connected</h2>
+              <p className="text-textMuted text-sm">Successfully paired with the sender. Waiting for them to pick files{dots}</p>
+            </div>
+          )}
+
           {isScreenMode ? (
             <div className="flex flex-col items-center w-full mt-4 animate-in fade-in zoom-in duration-300">
               <div className="flex items-center gap-2 mb-4 bg-surface border border-border px-4 py-2 rounded-full shadow-sm">
@@ -386,9 +412,9 @@ export function TransferView() {
             </div>
           ) : (
             <>
-              {connectionState !== "connecting" && (
+              {connectionState === "transferring" && (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 rounded-full bg-surface border border-border text-primary flex items-center justify-center mx-auto mb-6 shadow-sm">
                     <Loader2 size={32} className="animate-spin" strokeWidth={2} />
                   </div>
                   <h2 className="text-2xl font-bold mb-6 text-textMain">
@@ -397,7 +423,7 @@ export function TransferView() {
                 </>
               )}
               
-              {!isTextMode && (fileToDisplay || incomingThumbnail) && connectionState !== "connecting" && (
+              {!isTextMode && (fileToDisplay || incomingThumbnail) && connectionState !== "connecting" && connectionState !== "connected" && (
                 <div className="flex flex-col items-center w-full">
                   {(displayImageUrl || incomingThumbnail) && (
                     <div className="mb-6 rounded-xl overflow-hidden border border-border shadow-md w-40 h-40 flex-shrink-0 bg-surface">
@@ -419,7 +445,7 @@ export function TransferView() {
                 </div>
               )}
 
-              {isTextMode && connectionState !== "connecting" && (
+              {isTextMode && connectionState === "transferring" && (
                 <div className="bg-surface border border-border rounded-xl p-6 mb-8 w-full max-w-md mx-auto text-left shadow-sm">
                   <div className="flex items-center gap-2 mb-3 text-textMuted border-b border-border pb-3">
                     <MessageSquareText size={18} />
@@ -431,7 +457,7 @@ export function TransferView() {
                 </div>
               )}
 
-              {connectionState !== "connecting" && (
+              {connectionState === "transferring" && (
                 <div className="w-full max-w-md mx-auto bg-surface border border-border rounded-full h-3 mb-3 overflow-hidden">
                   <div 
                     className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
@@ -440,7 +466,7 @@ export function TransferView() {
                 </div>
               )}
 
-              {connectionState !== "connecting" && (
+              {connectionState === "transferring" && (
                 <div className="flex justify-between w-full max-w-md mx-auto text-sm text-textMuted font-medium">
                   <span>{progress}%</span>
                   <span>{transferSpeed}</span>

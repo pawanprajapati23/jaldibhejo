@@ -330,7 +330,8 @@ export class WebRTCEngine {
     this.dataChannel.onopen = () => {
       console.log('Data channel open');
       this.startPing();
-      if (useTransferStore.getState().role === 'sender' && !useTransferStore.getState().localStream) {
+      const state = useTransferStore.getState();
+      if (state.role === 'sender' && !state.localStream && (state.files.length > 0 || !!state.textPayload)) {
         this.startFileTransfer();
       }
     };
