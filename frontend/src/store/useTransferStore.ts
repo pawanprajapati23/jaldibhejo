@@ -24,6 +24,8 @@ interface TransferState {
   downloadedFileUrl: string | null;
   progress: number;
   transferSpeed: string;
+  timeRemaining: string | null;
+  latency: number | null;
   error: string | null;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
@@ -40,6 +42,8 @@ interface TransferState {
   setDownloadedFileUrl: (url: string | null) => void;
   setProgress: (progress: number) => void;
   setTransferSpeed: (speed: string) => void;
+  setTimeRemaining: (time: string | null) => void;
+  setLatency: (ms: number | null) => void;
   setError: (error: string | null) => void;
   setLocalStream: (stream: MediaStream | null) => void;
   setRemoteStream: (stream: MediaStream | null) => void;
@@ -60,6 +64,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   downloadedFileUrl: null,
   progress: 0,
   transferSpeed: '0 B/s',
+  timeRemaining: null,
+  latency: null,
   error: null,
   localStream: null,
   remoteStream: null,
@@ -76,6 +82,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   setDownloadedFileUrl: (downloadedFileUrl) => set({ downloadedFileUrl }),
   setProgress: (progress) => set({ progress }),
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
+  setTimeRemaining: (timeRemaining) => set({ timeRemaining }),
+  setLatency: (latency) => set({ latency }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
   setLocalStream: (localStream) => set({ localStream }),
   setRemoteStream: (remoteStream) => set({ remoteStream }),
@@ -92,6 +100,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       downloadedFileUrl: null,
       progress: 0,
       transferSpeed: '0 B/s',
+      timeRemaining: null,
+      latency: null,
       connectionState: 'connected'
     });
   },
@@ -119,6 +129,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       downloadedFileUrl: null,
       progress: 0,
       transferSpeed: '0 B/s',
+      timeRemaining: null,
+      latency: null,
       error: null,
       localStream: null,
       remoteStream: null,

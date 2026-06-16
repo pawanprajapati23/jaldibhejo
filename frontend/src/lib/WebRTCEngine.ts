@@ -4,7 +4,9 @@ import { db, auth } from './firebase';
 import { ref, onValue, push, set, onChildAdded, onDisconnect, remove, off, get } from 'firebase/database';
 import { signInAnonymously } from 'firebase/auth';
 
-const CHUNK_SIZE = 16 * 1024; // 16 KB for better stability on slow connections
+let CHUNK_SIZE = 16 * 1024; // Starts at 16 KB, will be adaptive
+const MAX_CHUNK_SIZE = 256 * 1024; // Max 256 KB for high-speed networks
+const MIN_CHUNK_SIZE = 8 * 1024; // Min 8 KB for very unstable networks
 const BUFFER_THRESHOLD = 1024 * 1024 * 2; // 2 MB
 
 export class WebRTCEngine {
@@ -17,29 +19,35 @@ export class WebRTCEngine {
   private incomingMetadata: any = null;
   private currentTransferId: string | null = null;
 
-  // Track transfer speed
+  // Track transfer speed and health
   private lastUpdateBytes = 0;
   private lastUpdateTime = 0;
   private speedInterval: any = null;
   private pingInterval: any = null;
+  private lastPingTime = 0;
 
   private iceCandidateBuffer: any[] = [];
   
-  // Pending transfer state
+  // Pending transfer state for auto-healing
   private pendingFile: Blob | null = null;
   private pendingFileName: string = '';
   private pendingIsZip: boolean = false;
   private pendingTransferId: string = '';
 
-  // Use a unique session ID per tab instead of Firebase UID so multiple tabs in the same browser can connect
   private mySessionId: string = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   private roomId: string | null = null;
+  private currentPeerId: string | null = null;
   private connectionTimeout: any = null;
+  private isRestartingIce = false;
 
   constructor() {
-    // Fire-and-forget auth initialization
     if (typeof window !== 'undefined') {
       this.ensureAuth().catch(() => {});
+      // Listen for network changes
+      window.addEventListener('online', () => this.handleNetworkChange());
+      window.addEventListener('offline', () => {
+        useTransferStore.getState().setError('You are offline. Waiting for connection...');
+      });
     }
   }
 
@@ -47,16 +55,19 @@ export class WebRTCEngine {
     if (!auth.currentUser) {
       try {
         await signInAnonymously(auth);
-        console.log('Authenticated for signaling session:', this.mySessionId);
       } catch (error: any) {
         console.error("Firebase Auth Error:", error);
-        throw new Error(`Authentication failed. Ensure 'Anonymous' Sign-in is enabled in Firebase Console. Details: ${error.message}`);
       }
     }
   }
 
+  private handleNetworkChange() {
+    console.log('Network back online, attempting ICE restart...');
+    this.restartIce();
+  }
+
   public async connect() {
-    // Handled by specific actions (create/join)
+    await this.ensureAuth();
   }
 
   public disconnect() {
@@ -71,9 +82,7 @@ export class WebRTCEngine {
     if (this.peerConnection && this.peerConnection.remoteDescription) {
       while (this.iceCandidateBuffer.length > 0) {
         const candidate = this.iceCandidateBuffer.shift();
-        this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(err => {
-          console.error("Failed to add buffered ICE candidate", err);
-        });
+        this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
       }
     }
   }
@@ -85,7 +94,7 @@ export class WebRTCEngine {
       if (!data) return;
 
       const { signalData, senderId } = data;
-      console.log('Received signal from:', senderId, 'type:', signalData.type || (signalData.candidate ? 'candidate' : 'unknown'));
+      this.currentPeerId = senderId;
 
       if (!this.peerConnection) {
         this.initiatePeerConnection(false, roomId, senderId);
@@ -101,6 +110,7 @@ export class WebRTCEngine {
         } else if (signalData.type === 'answer') {
           await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(signalData));
           this.processIceBuffer();
+          this.isRestartingIce = false;
         } else if (signalData.candidate) {
           if (this.peerConnection!.remoteDescription) {
             await this.peerConnection!.addIceCandidate(new RTCIceCandidate(signalData));
@@ -111,30 +121,25 @@ export class WebRTCEngine {
       } catch (err) {
         console.error('Signal error', err);
       }
-
-      // Remove signal after processing
       remove(ref(db, `rooms/${roomId}/signals/${this.mySessionId}/${snapshot.key}`)).catch(() => {});
     });
 
-    // Listen for peer-joined (for sender)
     const usersRef = ref(db, `rooms/${roomId}/users`);
     onChildAdded(usersRef, (snapshot) => {
       const peerId = snapshot.key;
       if (peerId !== this.mySessionId) {
-        console.log('Peer joined:', peerId);
         if (useTransferStore.getState().role === 'sender') {
           this.initiatePeerConnection(true, roomId, peerId!);
         }
       }
     });
 
-    // Listen for peer-left
     onValue(usersRef, (snapshot) => {
       const users = snapshot.val() || {};
       const peerIds = Object.keys(users).filter(id => id !== this.mySessionId);
       if (peerIds.length === 0 && useTransferStore.getState().connectionState === 'connected') {
-        useTransferStore.getState().setError('Peer disconnected');
-        this.cleanup();
+        useTransferStore.getState().setError('Peer disconnected. Waiting for them to return...');
+        // Don't cleanup fully, allow for re-connection if they refresh
       }
     });
   }
@@ -142,11 +147,7 @@ export class WebRTCEngine {
   private sendSignal(recipientId: string, signalData: any) {
     if (!this.roomId) return;
     const signalRef = ref(db, `rooms/${this.roomId}/signals/${recipientId}`);
-    
-    // Firebase Realtime DB will silently fail or reject if it receives an RTCSessionDescription
-    // or RTCIceCandidate object directly because they have prototypes. We MUST serialize them.
     const serializedSignal = JSON.parse(JSON.stringify(signalData));
-    
     push(signalRef, { senderId: this.mySessionId, signalData: serializedSignal })
       .catch((err) => console.error("Firebase signal push error:", err));
   }
@@ -156,14 +157,11 @@ export class WebRTCEngine {
       await this.ensureAuth();
       const roomId = Math.floor(100000 + Math.random() * 900000).toString();
       this.roomId = roomId;
-      
       useTransferStore.getState().setConnectionState('waiting');
       useTransferStore.getState().setRoomId(roomId);
-
       const userRef = ref(db, `rooms/${roomId}/users/${this.mySessionId}`);
       await set(userRef, { joinedAt: Date.now() });
       onDisconnect(userRef).remove();
-
       this.setupSignalingListeners(roomId);
       return roomId;
     } catch (error: any) {
@@ -175,19 +173,15 @@ export class WebRTCEngine {
     try {
       await this.ensureAuth();
       this.roomId = roomId;
-
-      // Check if room exists BEFORE joining
       const usersRef = ref(db, `rooms/${roomId}/users`);
       const snapshot = await get(usersRef);
       if (!snapshot.exists() || Object.keys(snapshot.val()).length === 0) {
           useTransferStore.getState().setError('Room not found or sender disconnected.');
           return;
       }
-
       const userRef = ref(db, `rooms/${roomId}/users/${this.mySessionId}`);
       await set(userRef, { joinedAt: Date.now() });
       onDisconnect(userRef).remove();
-
       this.setupSignalingListeners(roomId);
       useTransferStore.getState().setRoomId(roomId);
     } catch (error: any) {
@@ -195,55 +189,48 @@ export class WebRTCEngine {
     }
   }
 
+  private async restartIce() {
+    if (!this.peerConnection || !this.currentPeerId || this.isRestartingIce) return;
+    this.isRestartingIce = true;
+    console.log("Initiating ICE Restart...");
+    try {
+      const offer = await this.peerConnection.createOffer({ iceRestart: true });
+      await this.peerConnection.setLocalDescription(offer);
+      this.sendSignal(this.currentPeerId, offer);
+    } catch (e) {
+      this.isRestartingIce = false;
+      console.error("ICE Restart failed", e);
+    }
+  }
+
   private initiatePeerConnection(isInitiator: boolean, roomId: string, peerId: string) {
+    this.currentPeerId = peerId;
     if (this.peerConnection) {
         this.peerConnection.onicecandidate = null;
         this.peerConnection.onconnectionstatechange = null;
         this.peerConnection.oniceconnectionstatechange = null;
-        this.peerConnection.ontrack = null;
         this.peerConnection.close();
-    }
-    if (this.dataChannel) {
-        this.dataChannel.onmessage = null;
-        this.dataChannel.onopen = null;
-        this.dataChannel.onclose = null;
-        this.dataChannel.close();
     }
 
     this.peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:global.stun.twilio.com:3478' },
-        {
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        }
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
       ],
       iceCandidatePoolSize: 10,
-      bundlePolicy: 'max-bundle',
     });
 
     useTransferStore.getState().setConnectionState('connecting');
 
-    // Add a timeout to prevent infinite "Connecting..." hangs
     if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
     this.connectionTimeout = setTimeout(() => {
       if (useTransferStore.getState().connectionState === 'connecting') {
-        useTransferStore.getState().setError('Connection timeout: Strict network or firewall blocking P2P.');
-        this.cleanup();
+        useTransferStore.getState().setError('Connection timeout. Please check your network.');
+        this.restartIce();
       }
-    }, 35000);
+    }, 25000);
 
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
@@ -252,66 +239,24 @@ export class WebRTCEngine {
     };
 
     this.peerConnection.onconnectionstatechange = () => {
-      console.log('Connection state:', this.peerConnection?.connectionState);
-      if (this.peerConnection?.connectionState === 'connected') {
+      const state = this.peerConnection?.connectionState;
+      console.log('WebRTC Connection State:', state);
+      if (state === 'connected') {
         if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
         useTransferStore.getState().setConnectionState('connected');
-      } else if (this.peerConnection?.connectionState === 'failed' || this.peerConnection?.connectionState === 'disconnected') {
-        if (this.peerConnection?.connectionState === 'failed') {
-            useTransferStore.getState().setError('Connection failed. Attempting to reconnect...');
-            if (isInitiator) {
-                setTimeout(() => {
-                    console.log("Auto-reconnecting...");
-                    this.initiatePeerConnection(true, roomId, peerId);
-                }, 2000);
-            }
-        }
-      }
-    };
-
-    this.peerConnection.oniceconnectionstatechange = () => {
-      const state = (this.peerConnection as any)?.iceConnectionState;
-      if (state === 'connected' || state === 'completed') {
-        if (this.connectionTimeout) clearTimeout(this.connectionTimeout);
-        useTransferStore.getState().setConnectionState('connected');
-      } else if (state === 'failed') {
-        useTransferStore.getState().setError('Connection failed. Attempting to reconnect...');
-        if (isInitiator) {
-            setTimeout(() => {
-                this.initiatePeerConnection(true, roomId, peerId);
-            }, 2000);
-        }
-      }
-    };
-
-    // Add local stream tracks if available
-    const state = useTransferStore.getState();
-    if (state.localStream) {
-      state.localStream.getTracks().forEach(track => {
-        this.peerConnection!.addTrack(track, state.localStream!);
-      });
-    }
-
-    // Handle incoming remote tracks
-    this.peerConnection.ontrack = (event) => {
-      console.log('Received remote track');
-      if (event.streams && event.streams[0]) {
-        useTransferStore.getState().setRemoteStream(event.streams[0]);
+        useTransferStore.getState().setError(null);
+      } else if (state === 'failed' || state === 'disconnected') {
+        this.restartIce();
       }
     };
 
     if (isInitiator) {
       this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', { ordered: true });
       this.setupDataChannel();
-
-      this.peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true }).then((offer) => {
+      this.peerConnection.createOffer().then((offer) => {
         return this.peerConnection!.setLocalDescription(offer);
       }).then(() => {
-        // Send the signal. ICE candidates will be sent asynchronously via onicecandidate
         this.sendSignal(peerId, this.peerConnection!.localDescription);
-      }).catch(err => {
-        console.error('Error creating offer', err);
-        useTransferStore.getState().setError('Failed to initiate connection');
       });
     } else {
       this.peerConnection.ondatachannel = (event) => {
@@ -323,27 +268,29 @@ export class WebRTCEngine {
 
   private setupDataChannel() {
     if (!this.dataChannel) return;
-
     this.dataChannel.binaryType = 'arraybuffer';
     this.dataChannel.bufferedAmountLowThreshold = BUFFER_THRESHOLD / 2;
 
     this.dataChannel.onopen = () => {
-      console.log('Data channel open');
       this.startPing();
       const state = useTransferStore.getState();
-      if (state.role === 'sender' && !state.localStream && (state.files.length > 0 || !!state.textPayload)) {
+      if (state.role === 'sender' && (state.files.length > 0 || !!state.textPayload)) {
         this.startFileTransfer();
       }
-    };
-
-    this.dataChannel.onclose = () => {
-      this.stopPing();
     };
 
     this.dataChannel.onmessage = (event) => {
       if (typeof event.data === 'string') {
         const msg = JSON.parse(event.data);
-        if (msg.type === 'ping') return;
+        if (msg.type === 'ping') {
+          if (this.dataChannel?.readyState === 'open') this.dataChannel.send(JSON.stringify({ type: 'pong' }));
+          return;
+        }
+        if (msg.type === 'pong') {
+          const latency = Date.now() - this.lastPingTime;
+          useTransferStore.getState().setLatency(latency);
+          return;
+        }
         
         if (msg.type === 'metadata') {
           if (this.currentTransferId !== msg.transferId) {
@@ -357,7 +304,7 @@ export class WebRTCEngine {
           useTransferStore.getState().setIncomingThumbnail(msg.thumbnail || null);
           useTransferStore.getState().setConnectionState('transferring');
           this.startSpeedCalculation();
-          if (this.dataChannel && this.dataChannel.readyState === 'open') {
+          if (this.dataChannel?.readyState === 'open') {
             this.dataChannel.send(JSON.stringify({ type: 'resume-request', offset: this.receivedSize, transferId: msg.transferId }));
           }
         } else if (msg.type === 'resume-request') {
@@ -380,14 +327,15 @@ export class WebRTCEngine {
   private startPing() {
     this.stopPing();
     this.pingInterval = setInterval(() => {
-      if (this.dataChannel && this.dataChannel.readyState === 'open') {
+      if (this.dataChannel?.readyState === 'open') {
+        this.lastPingTime = Date.now();
         this.dataChannel.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 5000);
+    }, 4000);
   }
 
   private stopPing() {
-    if (this.pingInterval) { clearInterval(this.pingInterval); this.pingInterval = null; }
+    if (this.pingInterval) clearInterval(this.pingInterval);
   }
 
   public async startFileTransfer() {
@@ -405,14 +353,10 @@ export class WebRTCEngine {
     if (files.length === 0) return;
     state.setConnectionState('transferring');
 
-    // If we already have a pending transfer, just re-send metadata to resume
     if (this.pendingFile && this.pendingTransferId) {
       this.dataChannel.send(JSON.stringify({
-        type: 'metadata',
-        transferId: this.pendingTransferId,
-        name: this.pendingFileName,
-        size: this.pendingFile.size,
-        fileType: this.pendingIsZip ? 'application/zip' : this.pendingFile.type,
+        type: 'metadata', transferId: this.pendingTransferId, name: this.pendingFileName,
+        size: this.pendingFile.size, fileType: this.pendingIsZip ? 'application/zip' : this.pendingFile.type,
         isZip: this.pendingIsZip
       }));
       return;
@@ -433,51 +377,33 @@ export class WebRTCEngine {
       fileToTransfer = await zip.generateAsync({ type: 'blob' });
     }
 
-    const transferId = `${fileName}-${fileToTransfer.size}`;
     this.pendingFile = fileToTransfer;
     this.pendingFileName = fileName;
     this.pendingIsZip = isZip;
-    this.pendingTransferId = transferId;
+    this.pendingTransferId = `${fileName}-${fileToTransfer.size}`;
 
     let thumbnail: string | null = null;
     if (files.length === 1 && files[0].type.startsWith('image/')) {
       try {
-        const file = files[0];
         const img = new Image();
-        const url = URL.createObjectURL(file);
-        await new Promise((res, rej) => {
-          img.onload = res;
-          img.onerror = rej;
-          img.src = url;
-        });
+        const url = URL.createObjectURL(files[0]);
+        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
         const canvas = document.createElement('canvas');
         const MAX_SIZE = 150;
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-        } else {
-          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } }
+        else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
         thumbnail = canvas.toDataURL('image/jpeg', 0.5);
         URL.revokeObjectURL(url);
-      } catch (e) {
-        console.error("Thumbnail generation failed", e);
-      }
+      } catch (e) {}
     }
 
     this.dataChannel.send(JSON.stringify({
-      type: 'metadata',
-      transferId,
-      name: fileName,
-      size: fileToTransfer.size,
-      fileType: isZip ? 'application/zip' : fileToTransfer.type,
-      isZip,
-      thumbnail
+      type: 'metadata', transferId: this.pendingTransferId, name: fileName,
+      size: fileToTransfer.size, fileType: isZip ? 'application/zip' : fileToTransfer.type,
+      isZip, thumbnail
     }));
   }
 
@@ -501,9 +427,8 @@ export class WebRTCEngine {
       if (this.dataChannel.readyState !== 'open') break;
       if (this.dataChannel.bufferedAmount > BUFFER_THRESHOLD) {
         await new Promise<void>((resolve) => {
-          if (!this.dataChannel) return resolve();
-          this.dataChannel.onbufferedamountlow = () => {
-            if (this.dataChannel) this.dataChannel.onbufferedamountlow = null;
+          this.dataChannel!.onbufferedamountlow = () => {
+            this.dataChannel!.onbufferedamountlow = null;
             resolve();
           };
         });
@@ -513,11 +438,17 @@ export class WebRTCEngine {
       this.dataChannel.send(chunk);
       currentOffset += chunk.byteLength;
       this.receivedSize = currentOffset;
-      const progress = Math.min(100, Math.round((currentOffset / fileToTransfer.size) * 100));
-      useTransferStore.getState().setProgress(progress);
+      useTransferStore.getState().setProgress(Math.min(100, Math.round((currentOffset / fileToTransfer.size) * 100)));
+      
+      // Adaptive chunking based on instantaneous speed
+      if (currentOffset % (CHUNK_SIZE * 20) === 0) {
+        const speed = parseFloat(useTransferStore.getState().transferSpeed);
+        if (speed > 5) CHUNK_SIZE = Math.min(MAX_CHUNK_SIZE, CHUNK_SIZE * 2);
+        else if (speed < 1) CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, CHUNK_SIZE / 2);
+      }
     }
 
-    if (this.dataChannel && this.dataChannel.readyState === 'open' && currentOffset >= fileToTransfer.size) {
+    if (this.dataChannel?.readyState === 'open' && currentOffset >= fileToTransfer.size) {
       this.dataChannel.send(JSON.stringify({ type: 'eof' }));
       this.stopSpeedCalculation();
       useTransferStore.getState().setConnectionState('completed');
@@ -528,8 +459,7 @@ export class WebRTCEngine {
   private async finishDownload() {
     this.stopSpeedCalculation();
     const blob = new Blob(this.receivedBuffers, { type: this.incomingMetadata?.fileType || 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    useTransferStore.getState().setDownloadedFileUrl(url);
+    useTransferStore.getState().setDownloadedFileUrl(URL.createObjectURL(blob));
     useTransferStore.getState().setConnectionState('completed');
     this.receivedBuffers = [];
   }
@@ -537,16 +467,33 @@ export class WebRTCEngine {
   private startSpeedCalculation() {
     this.lastUpdateBytes = this.receivedSize;
     this.lastUpdateTime = Date.now();
+    if (this.speedInterval) clearInterval(this.speedInterval);
     this.speedInterval = setInterval(() => {
       const now = Date.now();
       const timeDiff = (now - this.lastUpdateTime) / 1000;
-      const bytesDiff = this.receivedSize - this.lastUpdateBytes;
+      const bytesDiff = Math.abs(this.receivedSize - this.lastUpdateBytes);
       if (timeDiff > 0) {
-        let speed = bytesDiff / timeDiff;
+        let speedBytes = bytesDiff / timeDiff;
+        let speed = speedBytes;
         let unit = 'B/s';
         if (speed > 1024 * 1024) { speed /= (1024 * 1024); unit = 'MB/s'; }
         else if (speed > 1024) { speed /= 1024; unit = 'KB/s'; }
         useTransferStore.getState().setTransferSpeed(`${speed.toFixed(2)} ${unit}`);
+
+        // Time remaining calculation
+        const remainingBytes = this.expectedSize - this.receivedSize;
+        if (speedBytes > 0 && remainingBytes > 0) {
+          const seconds = Math.ceil(remainingBytes / speedBytes);
+          if (seconds > 3600) {
+            useTransferStore.getState().setTimeRemaining(`${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m left`);
+          } else if (seconds > 60) {
+            useTransferStore.getState().setTimeRemaining(`${Math.floor(seconds / 60)}m ${seconds % 60}s left`);
+          } else {
+            useTransferStore.getState().setTimeRemaining(`${seconds}s left`);
+          }
+        } else {
+          useTransferStore.getState().setTimeRemaining(null);
+        }
       }
       this.lastUpdateBytes = this.receivedSize;
       this.lastUpdateTime = now;
@@ -554,7 +501,7 @@ export class WebRTCEngine {
   }
 
   private stopSpeedCalculation() {
-    if (this.speedInterval) { clearInterval(this.speedInterval); this.speedInterval = null; }
+    if (this.speedInterval) clearInterval(this.speedInterval);
   }
 
   private cleanup() {
@@ -562,21 +509,6 @@ export class WebRTCEngine {
     this.stopSpeedCalculation();
     if (this.dataChannel) { this.dataChannel.close(); this.dataChannel = null; }
     if (this.peerConnection) { this.peerConnection.close(); this.peerConnection = null; }
-    if (this.roomId) {
-        const signalRef = ref(db, `rooms/${this.roomId}/signals/${this.mySessionId}`);
-        off(signalRef);
-        const usersRef = ref(db, `rooms/${this.roomId}/users`);
-        off(usersRef);
-    }
-    const state = useTransferStore.getState();
-    if (state.localStream) {
-      state.localStream.getTracks().forEach(t => t.stop());
-      state.setLocalStream(null);
-    }
-    if (state.remoteStream) {
-      state.remoteStream.getTracks().forEach(t => t.stop());
-      state.setRemoteStream(null);
-    }
   }
 }
 

@@ -7,6 +7,7 @@ import { siteConfig } from "@/lib/site";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GlobalDropzone } from "@/components/GlobalDropzone";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { WasmPrefetcher } from "@/components/WasmPrefetcher";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
@@ -120,6 +121,7 @@ export default function RootLayout({
         </ThemeProvider>
         <Suspense fallback={null}>
           <ServiceWorkerRegister />
+          <WasmPrefetcher />
         </Suspense>
       </body>
     </html>

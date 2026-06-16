@@ -135,11 +135,24 @@ export default function ToolPage({ params }: ToolPageProps) {
     ],
   };
 
+  const howToJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": `How to use ${tool.name}`,
+    "description": tool.metaDescription,
+    "step": tool.howToUse.map((step, index) => ({
+      "@type": "HowToStep",
+      "position": index + 1,
+      "text": step
+    }))
+  };
+
   return (
     <div className="w-full max-w-5xl py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbListJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }} />
       
       <Link href="/tools" className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-textMuted transition-colors hover:text-textMain">
         <ArrowLeft size={16} />
