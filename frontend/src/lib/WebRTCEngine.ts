@@ -4,10 +4,8 @@ import { db, auth } from './firebase';
 import { ref, onValue, push, set, onChildAdded, onDisconnect, remove, off, get } from 'firebase/database';
 import { signInAnonymously } from 'firebase/auth';
 
-let CHUNK_SIZE = 16 * 1024; // Starts at 16 KB, will be adaptive
-const MAX_CHUNK_SIZE = 256 * 1024; // Max 256 KB for high-speed networks
-const MIN_CHUNK_SIZE = 8 * 1024; // Min 8 KB for very unstable networks
-const BUFFER_THRESHOLD = 1024 * 1024 * 2; // 2 MB
+let CHUNK_SIZE = 64 * 1024; // Fixed 64 KB (safest max size for reliable SCTP across most TURN servers)
+const BUFFER_THRESHOLD = 1024 * 1024; // 1 MB buffer backpressure threshold
 
 export class WebRTCEngine {
   private peerConnection: RTCPeerConnection | null = null;
@@ -215,11 +213,17 @@ export class WebRTCEngine {
     this.peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'stun:global.stun.twilio.com:3478' },
         { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
       ],
       iceCandidatePoolSize: 10,
+      bundlePolicy: 'max-bundle',
     });
 
     useTransferStore.getState().setConnectionState('connecting');
@@ -230,7 +234,7 @@ export class WebRTCEngine {
         useTransferStore.getState().setError('Connection timeout. Please check your network.');
         this.restartIce();
       }
-    }, 25000);
+    }, 45000);
 
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
@@ -431,18 +435,23 @@ export class WebRTCEngine {
     };
 
     while (currentOffset < fileToTransfer.size) {
-      if (this.dataChannel.readyState !== 'open') break;
+      if (!this.dataChannel || this.dataChannel.readyState !== 'open') break;
+      
+      // Strict backpressure loop: poll buffer instead of relying on fragile events
       if (this.dataChannel.bufferedAmount > BUFFER_THRESHOLD) {
-        await new Promise<void>((resolve) => {
-          this.dataChannel!.onbufferedamountlow = () => {
-            this.dataChannel!.onbufferedamountlow = null;
-            resolve();
-          };
-        });
-        if (!this.dataChannel || this.dataChannel.readyState !== 'open') break;
+        await new Promise<void>(r => setTimeout(r, 10)); // Yield to event loop to allow networking/UI updates
+        continue;
       }
+
       const chunk = await readSlice(currentOffset);
-      this.dataChannel.send(chunk);
+      
+      try {
+        this.dataChannel.send(chunk);
+      } catch (err) {
+        console.error("Data channel send failed. Possibly closed.", err);
+        break;
+      }
+      
       currentOffset += chunk.byteLength;
       this.receivedSize = currentOffset;
       
@@ -452,11 +461,9 @@ export class WebRTCEngine {
         this.lastProgressReport = progress;
       }
       
-      // Adaptive chunking based on instantaneous speed
-      if (currentOffset % (CHUNK_SIZE * 20) === 0) {
-        const speed = parseFloat(useTransferStore.getState().transferSpeed);
-        if (speed > 5) CHUNK_SIZE = Math.min(MAX_CHUNK_SIZE, CHUNK_SIZE * 2);
-        else if (speed < 1) CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, CHUNK_SIZE / 2);
+      // Essential: occasionally yield even if buffer is healthy, to prevent "Page Unresponsive" in Safari/Mobile Chrome
+      if (currentOffset % (CHUNK_SIZE * 50) === 0) {
+        await new Promise<void>(r => setTimeout(r, 0));
       }
     }
 
