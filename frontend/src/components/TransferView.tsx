@@ -209,10 +209,12 @@ export function TransferView() {
   };
 
   const [joinUrl, setJoinUrl] = useState("");
+  const [requestUrl, setRequestUrl] = useState("");
 
   useEffect(() => {
     if (roomId && typeof window !== 'undefined') {
       setJoinUrl(`${window.location.origin}?pin=${roomId}`);
+      setRequestUrl(`${window.location.origin}?request=${roomId}`);
     }
   }, [roomId]);
 
@@ -289,6 +291,38 @@ export function TransferView() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {connectionState === "waiting" && role === "receiver" && (
+        <div className="text-center w-full max-w-sm">
+          <h2 className="text-2xl font-bold mb-2 text-textMain">Request Files</h2>
+          <p className="text-textMuted mb-8 text-sm">Send this link to someone so they can upload files directly to your device.</p>
+          
+          <div className="bg-white p-4 rounded-2xl mb-8 inline-block">
+            <QRCodeSVG value={requestUrl || roomId || ""} size={180} fgColor="#000000" bgColor="transparent" />
+          </div>
+          
+          <div className="flex items-center bg-background border border-border rounded-xl p-2 pl-4 mb-8">
+            <span className="flex-1 text-sm text-textMain truncate mr-2 font-mono select-all">
+              {requestUrl}
+            </span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(requestUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="p-2 bg-surface hover:bg-surfaceHover rounded-lg transition-colors"
+            >
+              {copied ? <CheckCircle2 size={16} className="text-green-500" /> : <Copy size={16} className="text-textMuted" />}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-textMuted bg-surface border border-border py-2 px-4 rounded-full w-max mx-auto">
+            <Smartphone size={16} />
+            <span className="text-sm">Waiting for someone to open link{dots}</span>
+          </div>
         </div>
       )}
 
