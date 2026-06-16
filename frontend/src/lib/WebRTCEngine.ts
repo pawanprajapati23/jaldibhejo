@@ -4,8 +4,8 @@ import { db, auth } from './firebase';
 import { ref, onValue, push, set, onChildAdded, onDisconnect, remove, off, get } from 'firebase/database';
 import { signInAnonymously } from 'firebase/auth';
 
-let CHUNK_SIZE = 64 * 1024; // Fixed 64 KB (safest max size for reliable SCTP across most TURN servers)
-const BUFFER_THRESHOLD = 1024 * 1024; // 1 MB buffer backpressure threshold
+let CHUNK_SIZE = 16 * 1024; // 16 KB is the most universally safe SCTP message limit. DO NOT EXCEED.
+const BUFFER_THRESHOLD = 64 * 1024; // Extremely tight 64KB buffer limit to absolutely prevent Buffer Bloat timeouts.
 
 export class WebRTCEngine {
   private peerConnection: RTCPeerConnection | null = null;
@@ -435,20 +435,55 @@ export class WebRTCEngine {
     };
 
     while (currentOffset < fileToTransfer.size) {
-      if (!this.dataChannel || this.dataChannel.readyState !== 'open') break;
+      if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
+        useTransferStore.getState().setError("Connection dropped unexpectedly.");
+        break;
+      }
       
-      // Strict backpressure loop: poll buffer instead of relying on fragile events
-      if (this.dataChannel.bufferedAmount > BUFFER_THRESHOLD) {
-        await new Promise<void>(r => setTimeout(r, 10)); // Yield to event loop to allow networking/UI updates
-        continue;
+      // Military-grade backpressure: Event-driven with polling fallback
+      if (this.dataChannel.bufferedAmount >= BUFFER_THRESHOLD) {
+        await new Promise<void>((resolve) => {
+          let resolved = false;
+          
+          const done = () => {
+            if (resolved) return;
+            resolved = true;
+            if (this.dataChannel) {
+               this.dataChannel.onbufferedamountlow = null;
+            }
+            resolve();
+          };
+
+          if (this.dataChannel) {
+             this.dataChannel.onbufferedamountlow = done;
+          }
+
+          // Polling fallback to ensure we never get permanently stuck if event drops
+          const poll = () => {
+            if (resolved) return;
+            if (!this.dataChannel || this.dataChannel.readyState !== 'open' || this.dataChannel.bufferedAmount < BUFFER_THRESHOLD) {
+              done();
+            } else {
+              setTimeout(poll, 10); // Fast check
+            }
+          };
+          setTimeout(poll, 10);
+        });
+      }
+
+      if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
+        useTransferStore.getState().setError("Connection dropped unexpectedly.");
+        break;
       }
 
       const chunk = await readSlice(currentOffset);
       
       try {
         this.dataChannel.send(chunk);
-      } catch (err) {
-        console.error("Data channel send failed. Possibly closed.", err);
+      } catch (err: any) {
+        console.error("Data channel send failed:", err);
+        // If it throws an error (e.g. NetworkError), it usually means the connection is physically broken
+        useTransferStore.getState().setError("Failed to send packet. Network error: " + err.message);
         break;
       }
       
@@ -459,11 +494,6 @@ export class WebRTCEngine {
       if (progress !== this.lastProgressReport) {
         useTransferStore.getState().setProgress(progress);
         this.lastProgressReport = progress;
-      }
-      
-      // Essential: occasionally yield even if buffer is healthy, to prevent "Page Unresponsive" in Safari/Mobile Chrome
-      if (currentOffset % (CHUNK_SIZE * 50) === 0) {
-        await new Promise<void>(r => setTimeout(r, 0));
       }
     }
 
