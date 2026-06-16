@@ -10,7 +10,7 @@ type ToolWorkspaceProps = {
 // Dynamic imports for all tools
 const AiSummarizerTool = dynamic(() => import("./tools/AiSummarizerTool").then(mod => mod.AiSummarizerTool));
 const AiTitleGeneratorTool = dynamic(() => import("./tools/AiTitleGeneratorTool"));
-const BackgroundRemoverTool = dynamic(() => import("./tools/BackgroundRemoverTool"));
+const BackgroundRemoverTool = dynamic(() => import("./tools/BackgroundRemoverTool").then(mod => mod.BackgroundRemoverTool));
 const ImageFormatTool = dynamic(() => import("./tools/ImageFormatTool"));
 const ImageResizerTool = dynamic(() => import("./tools/ImageResizerTool").then(mod => mod.ImageResizerTool));
 const ImageToPdfTool = dynamic(() => import("./tools/ImageToPdfTool"));
