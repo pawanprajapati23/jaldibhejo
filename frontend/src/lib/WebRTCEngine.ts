@@ -479,6 +479,7 @@ export class WebRTCEngine {
         if (speed > 1024 * 1024) { speed /= (1024 * 1024); unit = 'MB/s'; }
         else if (speed > 1024) { speed /= 1024; unit = 'KB/s'; }
         useTransferStore.getState().setTransferSpeed(`${speed.toFixed(2)} ${unit}`);
+        useTransferStore.getState().appendSpeedHistory(speedBytes);
 
         // Time remaining calculation
         const remainingBytes = this.expectedSize - this.receivedSize;

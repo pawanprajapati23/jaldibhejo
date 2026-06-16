@@ -1,8 +1,13 @@
 import { ToolInfo } from "@/lib/tools";
+import { blogPosts } from "@/lib/blog";
+import Link from "next/link";
 
 export function ToolSeoContent({ tool }: { tool: ToolInfo }) {
+  // Simple related posts based on categories or just pick top 3
+  const relatedPosts = blogPosts.slice(0, 3);
+
   return (
-    <div className="space-y-8 mt-8">
+    <div className="space-y-8 mt-8 animate-in fade-in duration-500">
       <section className="grid gap-5 md:grid-cols-2">
         <div className="rounded-xl border border-border bg-surface p-5">
           <h2 className="mb-4 text-xl font-bold text-textMain">How to use {tool.name}</h2>
@@ -34,6 +39,19 @@ export function ToolSeoContent({ tool }: { tool: ToolInfo }) {
           dangerouslySetInnerHTML={{ __html: tool.seoArticle }}
         />
       )}
+
+      {/* Semantic Internal Linking Engine */}
+      <section className="rounded-xl border border-border bg-surface p-6">
+        <h2 className="text-xl font-bold text-textMain mb-4">Related Knowledge Base</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {relatedPosts.map(post => (
+            <Link key={post.slug} href={`/blog/${post.slug}`} className="group block p-4 rounded-lg bg-background border border-border hover:border-primary transition-colors">
+              <h3 className="font-bold text-sm text-textMain group-hover:text-primary transition-colors line-clamp-2">{post.title}</h3>
+              <p className="text-xs text-textMuted mt-2">{post.readingTime}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

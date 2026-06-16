@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { GlobalDropzone } from "@/components/GlobalDropzone";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { WasmPrefetcher } from "@/components/WasmPrefetcher";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
@@ -123,6 +124,7 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           <WasmPrefetcher />
         </Suspense>
+        <Toaster theme="dark" position="bottom-right" />
       </body>
     </html>
   );

@@ -7,6 +7,7 @@ import { useDropzone } from "react-dropzone";
 import { startSoundBase64, successSoundBase64 } from "@/lib/sounds";
 import { uploadToCloud } from "@/lib/cloudStorage";
 import Link from "next/link";
+import { toast } from "sonner";
 
 
 function VideoPlayer({ stream, muted }: { stream: MediaStream; muted?: boolean }) {
@@ -90,6 +91,7 @@ export function TransferView() {
     transferSpeed, 
     timeRemaining,
     latency,
+    speedHistory,
     error,
     downloadedFileUrl,
     setFiles,
@@ -165,6 +167,31 @@ export function TransferView() {
   }, [files, role]);
 
   const prevConnectionState = useRef<string>("disconnected");
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (connectionState === "transferring" || connectionState === "connected" || files.length > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [connectionState, files.length]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (latency && latency > 500) {
+      toast.warning("Weak Connection Detected. Optimizing chunks...", { id: "weak-conn" });
+    } else if (latency && latency < 200) {
+      toast.dismiss("weak-conn");
+    }
+  }, [latency]);
 
   useEffect(() => {
     if (prevConnectionState.current !== "transferring" && connectionState === "transferring") {
@@ -553,6 +580,19 @@ export function TransferView() {
                         <p className="text-xl font-mono font-bold text-textMain">{timeRemaining || "--"}</p>
                       </div>
                    </div>
+                   
+                   {/* Sparkline Graph */}
+                   {speedHistory.length > 1 && (
+                     <div className="h-12 w-full mb-4 flex items-end justify-between gap-1 opacity-70">
+                       {speedHistory.map((speed, i) => {
+                         const maxSpeed = Math.max(...speedHistory, 1);
+                         const heightPercent = Math.max((speed / maxSpeed) * 100, 5);
+                         return (
+                           <div key={i} className="bg-primary/50 w-full rounded-t-sm" style={{ height: `${heightPercent}%` }} />
+                         );
+                       })}
+                     </div>
+                   )}
                    
                    <div className="w-full bg-background border border-border rounded-full h-3 mb-3 overflow-hidden">
                       <div 

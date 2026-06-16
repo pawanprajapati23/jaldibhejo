@@ -26,6 +26,7 @@ interface TransferState {
   transferSpeed: string;
   timeRemaining: string | null;
   latency: number | null;
+  speedHistory: number[];
   error: string | null;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
@@ -44,6 +45,7 @@ interface TransferState {
   setTransferSpeed: (speed: string) => void;
   setTimeRemaining: (time: string | null) => void;
   setLatency: (ms: number | null) => void;
+  appendSpeedHistory: (speed: number) => void;
   setError: (error: string | null) => void;
   setLocalStream: (stream: MediaStream | null) => void;
   setRemoteStream: (stream: MediaStream | null) => void;
@@ -66,6 +68,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   transferSpeed: '0 B/s',
   timeRemaining: null,
   latency: null,
+  speedHistory: [],
   error: null,
   localStream: null,
   remoteStream: null,
@@ -84,6 +87,11 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
   setTimeRemaining: (timeRemaining) => set({ timeRemaining }),
   setLatency: (latency) => set({ latency }),
+  appendSpeedHistory: (speed) => set((state) => {
+    const newHistory = [...state.speedHistory, speed];
+    if (newHistory.length > 20) newHistory.shift(); // Keep last 20 data points
+    return { speedHistory: newHistory };
+  }),
   setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
   setLocalStream: (localStream) => set({ localStream }),
   setRemoteStream: (remoteStream) => set({ remoteStream }),
@@ -102,6 +110,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       transferSpeed: '0 B/s',
       timeRemaining: null,
       latency: null,
+      speedHistory: [],
       connectionState: 'connected'
     });
   },
@@ -131,6 +140,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       transferSpeed: '0 B/s',
       timeRemaining: null,
       latency: null,
+      speedHistory: [],
       error: null,
       localStream: null,
       remoteStream: null,
