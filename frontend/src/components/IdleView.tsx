@@ -25,21 +25,22 @@ export function IdleView() {
         </div>
       </section>
 
-      <div className="grid md:grid-cols-3 gap-6 justify-center items-center w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full px-4 max-w-5xl mx-auto">
         <button
           onClick={() => {
             webrtcEngine.connect();
             setMode("send");
             setRole("sender");
           }}
-          className="glass-panel w-full h-56 md:h-64 flex flex-col items-center justify-center gap-5 group"
+          className="group relative overflow-hidden glass-panel h-64 flex flex-col items-center justify-center gap-6 p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 active:scale-[0.98]"
         >
-          <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-primary transition-colors group-hover:bg-primary/10">
-            <Upload size={28} strokeWidth={2} />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="w-20 h-20 rounded-2xl bg-primary/10 text-primary flex items-center justify-center transition-all duration-500 group-hover:bg-primary group-hover:text-white group-hover:rotate-6 shadow-sm">
+            <Upload size={32} strokeWidth={2.5} />
           </div>
-          <div>
-            <h2 className="text-xl font-bold mb-1 text-textMain group-hover:text-primary transition-colors">Send Files</h2>
-            <p className="text-sm text-textMuted">Share via PIN or QR</p>
+          <div className="text-center">
+            <h2 className="text-2xl font-black tracking-tight text-textMain">Send Files</h2>
+            <p className="text-sm font-medium text-textMuted mt-1">Instant P2P Transfer</p>
           </div>
         </button>
 
@@ -49,14 +50,15 @@ export function IdleView() {
             setMode("receive");
             setRole("receiver");
           }}
-          className="glass-panel w-full h-56 md:h-64 flex flex-col items-center justify-center gap-5 group"
+          className="group relative overflow-hidden glass-panel h-64 flex flex-col items-center justify-center gap-6 p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-secondary/20 hover:-translate-y-1 active:scale-[0.98]"
         >
-          <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-secondary transition-colors group-hover:bg-secondary/10">
-            <Download size={28} strokeWidth={2} />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-secondary to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="w-20 h-20 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center transition-all duration-500 group-hover:bg-secondary group-hover:text-white group-hover:-rotate-6 shadow-sm">
+            <Download size={32} strokeWidth={2.5} />
           </div>
-          <div>
-            <h2 className="text-xl font-bold mb-1 text-textMain group-hover:text-secondary transition-colors">Receive</h2>
-            <p className="text-sm text-textMuted">Enter PIN to connect</p>
+          <div className="text-center">
+            <h2 className="text-2xl font-black tracking-tight text-textMain">Receive</h2>
+            <p className="text-sm font-medium text-textMuted mt-1">Enter PIN to Connect</p>
           </div>
         </button>
 
@@ -65,16 +67,17 @@ export function IdleView() {
             webrtcEngine.connect();
             setMode("receive");
             setRole("receiver");
-            await webrtcEngine.createRoom(); // Force create a room to act as the receiver waiting for someone to send
+            await webrtcEngine.createRoom();
           }}
-          className="glass-panel w-full h-56 md:h-64 flex flex-col items-center justify-center gap-5 group"
+          className="group relative overflow-hidden glass-panel h-64 flex flex-col items-center justify-center gap-6 p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-accent/20 hover:-translate-y-1 active:scale-[0.98]"
         >
-          <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-accent transition-colors group-hover:bg-accent/10">
-            <ArrowDownToLine size={28} strokeWidth={2} />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="w-20 h-20 rounded-2xl bg-accent/10 text-accent flex items-center justify-center transition-all duration-500 group-hover:bg-accent group-hover:text-white group-hover:scale-110 shadow-sm">
+            <ArrowDownToLine size={32} strokeWidth={2.5} />
           </div>
-          <div>
-            <h2 className="text-xl font-bold mb-1 text-textMain group-hover:text-accent transition-colors">Request Files</h2>
-            <p className="text-sm text-textMuted">Create an upload link</p>
+          <div className="text-center">
+            <h2 className="text-2xl font-black tracking-tight text-textMain">Request</h2>
+            <p className="text-sm font-medium text-textMuted mt-1">Create Upload Link</p>
           </div>
         </button>
       </div>
