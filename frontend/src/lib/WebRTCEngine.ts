@@ -266,6 +266,8 @@ export class WebRTCEngine {
     }
   }
 
+  private lastProgressReport = -1;
+
   private setupDataChannel() {
     if (!this.dataChannel) return;
     this.dataChannel.binaryType = 'arraybuffer';
@@ -296,6 +298,7 @@ export class WebRTCEngine {
           if (this.currentTransferId !== msg.transferId) {
             this.receivedBuffers = [];
             this.receivedSize = 0;
+            this.lastProgressReport = -1;
             this.currentTransferId = msg.transferId;
             this.incomingMetadata = msg;
             this.expectedSize = msg.size;
@@ -319,7 +322,10 @@ export class WebRTCEngine {
         this.receivedBuffers.push(event.data);
         this.receivedSize += event.data.byteLength;
         const progress = Math.min(100, Math.round((this.receivedSize / this.expectedSize) * 100));
-        useTransferStore.getState().setProgress(progress);
+        if (progress !== this.lastProgressReport) {
+          useTransferStore.getState().setProgress(progress);
+          this.lastProgressReport = progress;
+        }
       }
     };
   }
@@ -381,6 +387,7 @@ export class WebRTCEngine {
     this.pendingFileName = fileName;
     this.pendingIsZip = isZip;
     this.pendingTransferId = `${fileName}-${fileToTransfer.size}`;
+    this.lastProgressReport = -1;
 
     let thumbnail: string | null = null;
     if (files.length === 1 && files[0].type.startsWith('image/')) {
@@ -438,7 +445,12 @@ export class WebRTCEngine {
       this.dataChannel.send(chunk);
       currentOffset += chunk.byteLength;
       this.receivedSize = currentOffset;
-      useTransferStore.getState().setProgress(Math.min(100, Math.round((currentOffset / fileToTransfer.size) * 100)));
+      
+      const progress = Math.min(100, Math.round((currentOffset / fileToTransfer.size) * 100));
+      if (progress !== this.lastProgressReport) {
+        useTransferStore.getState().setProgress(progress);
+        this.lastProgressReport = progress;
+      }
       
       // Adaptive chunking based on instantaneous speed
       if (currentOffset % (CHUNK_SIZE * 20) === 0) {
