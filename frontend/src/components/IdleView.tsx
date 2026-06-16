@@ -33,42 +33,42 @@ export function IdleView() {
   };
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <section className="mb-12 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-4">
-          <span className="relative flex h-2 w-2">
+    <div className="w-full flex flex-col items-center px-2">
+      <section className="mb-6 text-center">
+        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest mb-3">
+          <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
           </span>
           Fast P2P Sharing
         </div>
-        <h1 className="text-4xl md:text-6xl font-black text-textMain tracking-tight mb-4">Send files instantly.</h1>
-        <p className="mx-auto max-w-xl text-textMuted md:text-lg">
+        <h1 className="text-3xl md:text-5xl font-black text-textMain tracking-tight mb-2">Send files instantly.</h1>
+        <p className="mx-auto max-w-lg text-textMuted text-xs md:text-sm">
           No sign-ups. No size limits. Devices connect directly.
         </p>
       </section>
 
-      <div className="grid lg:grid-cols-2 gap-8 w-full max-w-5xl mx-auto items-stretch">
+      <div className="grid lg:grid-cols-2 gap-4 w-full max-w-4xl mx-auto items-stretch">
         {/* Send Section */}
         <div 
           {...getRootProps()} 
-          className={`relative overflow-hidden glass-panel flex flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 cursor-pointer border-2 ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10'}`}
+          className={`relative overflow-hidden glass-panel flex flex-col items-center justify-center p-6 text-center transition-all duration-300 cursor-pointer border ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border hover:border-primary/50'}`}
         >
           <input {...getInputProps()} />
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-blue-400" />
           
-          <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 transition-colors duration-300 ${isDragActive ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
-            <Upload size={40} strokeWidth={2.5} className={isDragActive ? 'animate-bounce' : ''} />
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-colors duration-300 ${isDragActive ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+            <Upload size={24} strokeWidth={2.5} className={isDragActive ? 'animate-bounce' : ''} />
           </div>
           
-          <h2 className="text-2xl font-bold text-textMain mb-2">Send Files</h2>
-          <p className="text-textMuted text-sm mb-8">Tap here or drag & drop files to generate a PIN.</p>
+          <h2 className="text-xl font-bold text-textMain mb-1">Send Files</h2>
+          <p className="text-textMuted text-xs mb-5 px-4">Tap here or drag & drop files to generate a PIN.</p>
           
-          <button className="px-8 py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:bg-primary/90 hover:-translate-y-0.5 transition-all w-full sm:w-auto">
-            Select Files to Send
+          <button className="px-6 py-2.5 text-sm bg-primary text-white font-bold rounded-lg shadow-sm hover:bg-primary/90 transition-all w-full max-w-[200px]">
+            Select Files
           </button>
 
-          <div className="mt-6 flex items-center gap-4 text-xs font-bold text-textMuted uppercase tracking-widest">
+          <div className="mt-4 flex items-center justify-center gap-4 text-[10px] font-bold text-textMuted uppercase tracking-widest w-full border-t border-border pt-4">
             <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -78,41 +78,41 @@ export function IdleView() {
               }}
               className="hover:text-primary transition-colors flex items-center gap-1"
             >
-              Send Text / Screen <ArrowUpRight size={14} />
+              Send Text / Screen <ArrowUpRight size={12} />
             </button>
           </div>
         </div>
 
         {/* Receive Section */}
-        <div className="relative overflow-hidden glass-panel flex flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 border-2 border-border hover:border-secondary/50 hover:shadow-xl hover:shadow-secondary/10">
+        <div className="relative overflow-hidden glass-panel flex flex-col items-center justify-center p-6 text-center transition-all duration-300 border border-border hover:border-secondary/50">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-secondary to-purple-400" />
           
-          <div className="w-24 h-24 rounded-full bg-secondary/10 text-secondary flex items-center justify-center mb-6">
-            <Download size={40} strokeWidth={2.5} />
+          <div className="w-14 h-14 rounded-full bg-secondary/10 text-secondary flex items-center justify-center mb-4">
+            <Download size={24} strokeWidth={2.5} />
           </div>
           
-          <h2 className="text-2xl font-bold text-textMain mb-2">Receive</h2>
-          <p className="text-textMuted text-sm mb-6">Enter the 6-digit PIN from the sender.</p>
+          <h2 className="text-xl font-bold text-textMain mb-1">Receive</h2>
+          <p className="text-textMuted text-xs mb-4">Enter the 6-digit PIN from the sender.</p>
           
-          <form onSubmit={handleReceive} className="w-full max-w-[280px]">
+          <form onSubmit={handleReceive} className="w-full max-w-[200px]">
             <input
               type="text"
               maxLength={6}
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
               placeholder="000000"
-              className="w-full text-center text-4xl tracking-[0.3em] font-mono bg-background border-2 border-border rounded-xl py-4 mb-4 focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all text-textMain placeholder-textMuted/30"
+              className="w-full text-center text-3xl tracking-[0.25em] font-mono bg-background border border-border rounded-lg py-2.5 mb-3 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/50 transition-all text-textMain placeholder-textMuted/30 h-[52px]"
             />
             <button
               type="submit"
               disabled={pin.length !== 6}
-              className="w-full py-3.5 bg-secondary text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary/90 shadow-lg shadow-secondary/25 hover:-translate-y-0.5 transition-all"
+              className="w-full py-2.5 text-sm bg-secondary text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary/90 shadow-sm transition-all"
             >
-              Connect Device
+              Connect
             </button>
           </form>
 
-          <div className="mt-8 flex items-center gap-4 text-xs font-bold text-textMuted uppercase tracking-widest">
+          <div className="mt-4 flex items-center justify-center gap-4 text-[10px] font-bold text-textMuted uppercase tracking-widest w-full border-t border-border pt-4">
             <button 
               onClick={async (e) => {
                 e.preventDefault();
@@ -123,35 +123,42 @@ export function IdleView() {
               }}
               className="hover:text-secondary transition-colors flex items-center gap-1"
             >
-              Or Request Files <ArrowDownToLine size={14} />
+              Request Files <ArrowDownToLine size={12} />
             </button>
           </div>
         </div>
       </div>
 
-      <section className="mt-16 grid gap-6 text-left md:grid-cols-3 max-w-5xl mx-auto w-full">
-        <div className="rounded-2xl border border-border bg-surface p-6 hover:border-textMuted/30 transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center text-textMain mb-4">
-            <Smartphone size={20} />
+      {/* Info Section - Tighter Grid */}
+      <section className="mt-8 grid gap-3 text-left md:grid-cols-3 max-w-4xl mx-auto w-full">
+        <div className="rounded-xl border border-border bg-surface p-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-md bg-background border border-border flex items-center justify-center text-textMain flex-shrink-0">
+            <Smartphone size={16} />
           </div>
-          <h2 className="font-bold text-textMain text-lg">No app required</h2>
-          <p className="mt-2 text-sm leading-relaxed text-textMuted">Works instantly in any modern browser on Android, iOS, Windows, or Mac.</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-surface p-6 hover:border-textMuted/30 transition-colors">
-          <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center text-textMain mb-4">
-            <QrCode size={20} />
-          </div>
-          <h2 className="font-bold text-textMain text-lg">QR Code scanning</h2>
-          <p className="mt-2 text-sm leading-relaxed text-textMuted">Scan the QR code with your phone's camera to connect devices instantly without typing.</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-surface p-6 hover:border-textMuted/30 transition-colors flex flex-col justify-between">
           <div>
-            <h2 className="font-bold text-textMain text-lg">Free offline tools</h2>
-            <p className="mt-2 text-sm leading-relaxed text-textMuted mb-4">Need to compress an image or edit a PDF before sending? We have built-in secure tools.</p>
+            <h2 className="font-bold text-textMain text-sm">No app required</h2>
+            <p className="mt-1 text-[11px] leading-relaxed text-textMuted">Works instantly in any modern browser on all devices.</p>
           </div>
-          <Link href="/tools" className="text-primary text-sm font-bold flex items-center gap-1 hover:underline w-max">
-            Browse Tools <ArrowRight size={16} />
-          </Link>
+        </div>
+        <div className="rounded-xl border border-border bg-surface p-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-md bg-background border border-border flex items-center justify-center text-textMain flex-shrink-0">
+            <QrCode size={16} />
+          </div>
+          <div>
+            <h2 className="font-bold text-textMain text-sm">QR Code scanning</h2>
+            <p className="mt-1 text-[11px] leading-relaxed text-textMuted">Scan with your phone's camera to connect without typing.</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface p-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-md bg-background border border-border flex items-center justify-center text-textMain flex-shrink-0">
+            <Upload size={16} />
+          </div>
+          <div>
+            <h2 className="font-bold text-textMain text-sm">Free offline tools</h2>
+            <Link href="/tools" className="mt-1 text-[11px] font-bold text-primary hover:underline flex items-center gap-1">
+              Browse PDF & Image Tools <ArrowRight size={10} />
+            </Link>
+          </div>
         </div>
       </section>
     </div>
