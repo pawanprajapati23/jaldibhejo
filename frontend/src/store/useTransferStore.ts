@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type ConnectionState = 'disconnected' | 'waiting' | 'connecting' | 'connected' | 'transferring' | 'completed' | 'error';
 export type AppMode = 'idle' | 'send' | 'receive';
@@ -53,79 +54,9 @@ interface TransferState {
   reset: () => void;
 }
 
-export const useTransferStore = create<TransferState>((set, get) => ({
-  mode: 'idle',
-  role: null,
-  connectionState: 'disconnected',
-  roomId: null,
-  files: [],
-  textPayload: null,
-  incomingFile: null,
-  incomingText: null,
-  incomingThumbnail: null,
-  downloadedFileUrl: null,
-  progress: 0,
-  transferSpeed: '0 B/s',
-  timeRemaining: null,
-  latency: null,
-  speedHistory: [],
-  error: null,
-  localStream: null,
-  remoteStream: null,
-
-  setMode: (mode) => set({ mode }),
-  setRole: (role) => set({ role }),
-  setConnectionState: (connectionState) => set({ connectionState }),
-  setRoomId: (roomId) => set({ roomId }),
-  setFiles: (files) => set({ files }),
-  setTextPayload: (textPayload) => set({ textPayload }),
-  setIncomingFile: (incomingFile) => set({ incomingFile }),
-  setIncomingText: (incomingText) => set({ incomingText }),
-  setIncomingThumbnail: (incomingThumbnail) => set({ incomingThumbnail }),
-  setDownloadedFileUrl: (downloadedFileUrl) => set({ downloadedFileUrl }),
-  setProgress: (progress) => set({ progress }),
-  setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
-  setTimeRemaining: (timeRemaining) => set({ timeRemaining }),
-  setLatency: (latency) => set({ latency }),
-  appendSpeedHistory: (speed) => set((state) => {
-    const newHistory = [...state.speedHistory, speed];
-    if (newHistory.length > 20) newHistory.shift(); // Keep last 20 data points
-    return { speedHistory: newHistory };
-  }),
-  setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
-  setLocalStream: (localStream) => set({ localStream }),
-  setRemoteStream: (remoteStream) => set({ remoteStream }),
-  prepareNextTransfer: () => {
-    const { downloadedFileUrl } = get();
-    if (downloadedFileUrl) {
-      URL.revokeObjectURL(downloadedFileUrl);
-    }
-    set({
-      files: [],
-      textPayload: null,
-      incomingFile: null,
-      incomingText: null,
-      downloadedFileUrl: null,
-      progress: 0,
-      transferSpeed: '0 B/s',
-      timeRemaining: null,
-      latency: null,
-      speedHistory: [],
-      connectionState: 'connected'
-    });
-  },
-  reset: () => {
-    const { downloadedFileUrl, localStream, remoteStream } = get();
-    if (downloadedFileUrl) {
-      URL.revokeObjectURL(downloadedFileUrl);
-    }
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-    }
-    if (remoteStream) {
-      remoteStream.getTracks().forEach(t => t.stop());
-    }
-    set({
+export const useTransferStore = create<TransferState>()(
+  persist(
+    (set, get) => ({
       mode: 'idle',
       role: null,
       connectionState: 'disconnected',
@@ -144,6 +75,89 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       error: null,
       localStream: null,
       remoteStream: null,
-    });
-  },
-}));
+
+      setMode: (mode) => set({ mode }),
+      setRole: (role) => set({ role }),
+      setConnectionState: (connectionState) => set({ connectionState }),
+      setRoomId: (roomId) => set({ roomId }),
+      setFiles: (files) => set({ files }),
+      setTextPayload: (textPayload) => set({ textPayload }),
+      setIncomingFile: (incomingFile) => set({ incomingFile }),
+      setIncomingText: (incomingText) => set({ incomingText }),
+      setIncomingThumbnail: (incomingThumbnail) => set({ incomingThumbnail }),
+      setDownloadedFileUrl: (downloadedFileUrl) => set({ downloadedFileUrl }),
+      setProgress: (progress) => set({ progress }),
+      setTransferSpeed: (transferSpeed) => set({ transferSpeed }),
+      setTimeRemaining: (timeRemaining) => set({ timeRemaining }),
+      setLatency: (latency) => set({ latency }),
+      appendSpeedHistory: (speed) => set((state) => {
+        const newHistory = [...state.speedHistory, speed];
+        if (newHistory.length > 20) newHistory.shift(); // Keep last 20 data points
+        return { speedHistory: newHistory };
+      }),
+      setError: (error) => set({ error, connectionState: error ? 'error' : 'disconnected' }),
+      setLocalStream: (localStream) => set({ localStream }),
+      setRemoteStream: (remoteStream) => set({ remoteStream }),
+      prepareNextTransfer: () => {
+        const { downloadedFileUrl } = get();
+        if (downloadedFileUrl) {
+          URL.revokeObjectURL(downloadedFileUrl);
+        }
+        set({
+          files: [],
+          textPayload: null,
+          incomingFile: null,
+          incomingText: null,
+          downloadedFileUrl: null,
+          progress: 0,
+          transferSpeed: '0 B/s',
+          timeRemaining: null,
+          latency: null,
+          speedHistory: [],
+          connectionState: 'connected'
+        });
+      },
+      reset: () => {
+        const { downloadedFileUrl, localStream, remoteStream } = get();
+        if (downloadedFileUrl) {
+          URL.revokeObjectURL(downloadedFileUrl);
+        }
+        if (localStream) {
+          localStream.getTracks().forEach(t => t.stop());
+        }
+        if (remoteStream) {
+          remoteStream.getTracks().forEach(t => t.stop());
+        }
+        set({
+          mode: 'idle',
+          role: null,
+          connectionState: 'disconnected',
+          roomId: null,
+          files: [],
+          textPayload: null,
+          incomingFile: null,
+          incomingText: null,
+          incomingThumbnail: null,
+          downloadedFileUrl: null,
+          progress: 0,
+          transferSpeed: '0 B/s',
+          timeRemaining: null,
+          latency: null,
+          speedHistory: [],
+          error: null,
+          localStream: null,
+          remoteStream: null,
+        });
+      },
+    }),
+    {
+      name: 'jaldibhejo-transfer-state',
+      partialize: (state) => ({
+        mode: state.mode,
+        role: state.role,
+        roomId: state.roomId,
+        textPayload: state.textPayload,
+      }),
+    }
+  )
+);

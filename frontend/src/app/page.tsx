@@ -17,7 +17,19 @@ export default function Home() {
     // Connect to signaling server immediately when app loads
     webrtcEngine.connect();
 
-    if (mode === "idle") {
+    const state = useTransferStore.getState();
+
+    // Auto-resume persisted room if user refreshed
+    if (state.mode !== "idle" && state.roomId && state.connectionState === "disconnected") {
+      setTimeout(() => {
+        useTransferStore.getState().setConnectionState('connecting');
+        webrtcEngine.connect();
+        webrtcEngine.joinRoom(state.roomId!);
+      }, 300);
+      return; // Skip the URL param checks since we are resuming
+    }
+
+    if (state.mode === "idle") {
       // Don't disconnect here, keep socket alive for speed
       // webrtcEngine.disconnect(); 
       
