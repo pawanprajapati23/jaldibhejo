@@ -1,6 +1,6 @@
 import { useTransferStore } from "@/store/useTransferStore";
 import Link from "next/link";
-import { Upload, Download, ArrowRight } from "lucide-react";
+import { Upload, Download, ArrowRight, ArrowDownToLine } from "lucide-react";
 import { webrtcEngine } from "@/lib/WebRTCEngine";
 
 export function IdleView() {
@@ -25,14 +25,14 @@ export function IdleView() {
         </div>
       </section>
 
-      <div className="flex flex-col md:flex-row gap-6 justify-center items-center w-full">
+      <div className="grid md:grid-cols-3 gap-6 justify-center items-center w-full">
         <button
           onClick={() => {
             webrtcEngine.connect();
             setMode("send");
             setRole("sender");
           }}
-          className="glass-panel w-full md:w-64 h-64 flex flex-col items-center justify-center gap-5 group"
+          className="glass-panel w-full h-56 md:h-64 flex flex-col items-center justify-center gap-5 group"
         >
           <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-primary transition-colors group-hover:bg-primary/10">
             <Upload size={28} strokeWidth={2} />
@@ -49,7 +49,7 @@ export function IdleView() {
             setMode("receive");
             setRole("receiver");
           }}
-          className="glass-panel w-full md:w-64 h-64 flex flex-col items-center justify-center gap-5 group"
+          className="glass-panel w-full h-56 md:h-64 flex flex-col items-center justify-center gap-5 group"
         >
           <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-secondary transition-colors group-hover:bg-secondary/10">
             <Download size={28} strokeWidth={2} />
@@ -57,6 +57,24 @@ export function IdleView() {
           <div>
             <h2 className="text-xl font-bold mb-1 text-textMain group-hover:text-secondary transition-colors">Receive</h2>
             <p className="text-sm text-textMuted">Enter PIN to connect</p>
+          </div>
+        </button>
+
+        <button
+          onClick={async () => {
+            webrtcEngine.connect();
+            setMode("receive");
+            setRole("receiver");
+            await webrtcEngine.createRoom(); // Force create a room to act as the receiver waiting for someone to send
+          }}
+          className="glass-panel w-full h-56 md:h-64 flex flex-col items-center justify-center gap-5 group"
+        >
+          <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-accent transition-colors group-hover:bg-accent/10">
+            <ArrowDownToLine size={28} strokeWidth={2} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold mb-1 text-textMain group-hover:text-accent transition-colors">Request Files</h2>
+            <p className="text-sm text-textMuted">Create an upload link</p>
           </div>
         </button>
       </div>

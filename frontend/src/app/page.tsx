@@ -25,6 +25,8 @@ export default function Home() {
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const pin = params.get("pin");
+        const requestPin = params.get("request");
+        
         if (pin && pin.length === 6) {
           useTransferStore.getState().setMode("receive");
           useTransferStore.getState().setRole("receiver");
@@ -36,6 +38,19 @@ export default function Home() {
             useTransferStore.getState().setConnectionState('connecting');
             webrtcEngine.connect();
             webrtcEngine.joinRoom(pin);
+          }, 300);
+        } else if (requestPin && requestPin.length === 6) {
+          useTransferStore.getState().setMode("send");
+          useTransferStore.getState().setRole("sender");
+          useTransferStore.getState().setRoomId(requestPin); // set the room ID to the pin we need to join
+          
+          // Clean URL so it doesn't trigger again on refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          setTimeout(() => {
+            useTransferStore.getState().setConnectionState('connecting');
+            webrtcEngine.connect();
+            webrtcEngine.joinRoom(requestPin);
           }, 300);
         }
       }
