@@ -64,10 +64,6 @@ export const metadata: Metadata = {
     description: "Fast WebRTC peer-to-peer file sharing with free online tools.",
     images: ["/logo.png"],
   },
-  icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
-  },
   robots: {
     index: true,
     follow: true,
