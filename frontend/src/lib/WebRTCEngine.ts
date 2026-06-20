@@ -37,6 +37,8 @@ export class WebRTCEngine {
   private currentPeerId: string | null = null;
   private connectionTimeout: any = null;
   private isRestartingIce = false;
+  private signalRef: any = null;
+  private usersRef: any = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -86,8 +88,8 @@ export class WebRTCEngine {
   }
 
   private setupSignalingListeners(roomId: string) {
-    const signalRef = ref(db, `rooms/${roomId}/signals/${this.mySessionId}`);
-    onChildAdded(signalRef, async (snapshot) => {
+    this.signalRef = ref(db, `rooms/${roomId}/signals/${this.mySessionId}`);
+    onChildAdded(this.signalRef, async (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
@@ -122,8 +124,8 @@ export class WebRTCEngine {
       remove(ref(db, `rooms/${roomId}/signals/${this.mySessionId}/${snapshot.key}`)).catch(() => {});
     });
 
-    const usersRef = ref(db, `rooms/${roomId}/users`);
-    onChildAdded(usersRef, (snapshot) => {
+    this.usersRef = ref(db, `rooms/${roomId}/users`);
+    onChildAdded(this.usersRef, (snapshot) => {
       const peerId = snapshot.key;
       if (peerId !== this.mySessionId) {
         if (useTransferStore.getState().role === 'sender') {
@@ -132,7 +134,7 @@ export class WebRTCEngine {
       }
     });
 
-    onValue(usersRef, (snapshot) => {
+    onValue(this.usersRef, (snapshot) => {
       const users = snapshot.val() || {};
       const peerIds = Object.keys(users).filter(id => id !== this.mySessionId);
       if (peerIds.length === 0 && useTransferStore.getState().connectionState === 'connected') {
@@ -557,8 +559,15 @@ export class WebRTCEngine {
   private cleanup() {
     this.stopPing();
     this.stopSpeedCalculation();
+    if (this.signalRef) { off(this.signalRef); this.signalRef = null; }
+    if (this.usersRef) { off(this.usersRef); this.usersRef = null; }
     if (this.dataChannel) { this.dataChannel.close(); this.dataChannel = null; }
     if (this.peerConnection) { this.peerConnection.close(); this.peerConnection = null; }
+    this.iceCandidateBuffer = [];
+    this.pendingFile = null;
+    this.pendingFileName = '';
+    this.pendingTransferId = '';
+    this.currentPeerId = null;
   }
 }
 

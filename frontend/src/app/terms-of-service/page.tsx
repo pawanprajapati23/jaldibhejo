@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import React from 'react';
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Read our Terms of Service. Learn about your rights, acceptance of terms, and user conduct guidelines when using JaldiBhejo.",
+  alternates: {
+    canonical: "/terms-of-service",
+  },
+};
 
 export default function TermsOfServicePage() {
   return (

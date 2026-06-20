@@ -49,7 +49,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://jaldibhejo.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://jaldibhejo.sizesnap.in";
 
   const breadcrumbListJsonLd = {
     "@context": "https://schema.org",

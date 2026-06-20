@@ -105,7 +105,12 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className={`bg-background text-textMain antialiased selection:bg-primary/20 selection:text-primary`}>
+      <body className={`bg-background text-textMain antialiased selection:bg-primary/20 selection:text-primary relative min-h-screen`}>
+        {/* Ambient Glow Blobs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden -z-10 select-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/10 dark:bg-primary/5 blur-[120px] animate-pulse-slow" />
+          <div className="absolute bottom-[20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-secondary/10 dark:bg-secondary/5 blur-[140px] animate-pulse-slow [animation-delay:3s]" />
+        </div>
         <ThemeProvider>
           <GlobalDropzone>
             <SiteHeader />

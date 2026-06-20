@@ -11,7 +11,7 @@ const QRCodeSVG = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeS
 });
 
 export function QrCodeTool() {
-  const [value, setValue] = useState("https://jaldibhejo.vercel.app");
+  const [value, setValue] = useState("https://jaldibhejo.sizesnap.in");
   const [copied, setCopied] = useState(false);
   
   const [fgColor, setFgColor] = useState("#000000");

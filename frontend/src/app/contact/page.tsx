@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import React from 'react';
+
+export const metadata: Metadata = {
+  title: "Contact Us",
+  description: "Get in touch with JaldiBhejo. Send feedback, report issues or inquire about partnerships.",
+  alternates: {
+    canonical: "/contact",
+  },
+};
 
 export default function ContactPage() {
   return (

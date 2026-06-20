@@ -48,7 +48,7 @@ export default function ToolPage({ params }: ToolPageProps) {
   const relatedTools = getRelatedTools(tool);
   
   // Advanced SEO Schema Generation
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://jaldibhejo.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://jaldibhejo.sizesnap.in";
   
   const breadcrumbListJsonLd = {
     "@context": "https://schema.org",

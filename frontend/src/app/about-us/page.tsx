@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import React from 'react';
+
+export const metadata: Metadata = {
+  title: "About Us",
+  description: "Learn about JaldiBhejo, our privacy-first peer-to-peer file sharing philosophy, local processing, and commitment to free web utilities.",
+  alternates: {
+    canonical: "/about-us",
+  },
+};
 
 export default function AboutUsPage() {
   return (

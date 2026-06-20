@@ -8,6 +8,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: [
+        "/d/",      // Block temporary download URLs
+        "/api/",    // Block API endpoints
+      ],
     },
     sitemap: `${siteUrl}/sitemap.xml`,
   };

@@ -1,6 +1,6 @@
 # JaldiBhejo AdSense and SEO Plan
 
-Website: https://jaldibhejo.vercel.app  
+Website: https://jaldibhejo.sizesnap.in  
 Owner: Pawan Prajapati  
 Email: diplomawithbtech@gmail.com
 

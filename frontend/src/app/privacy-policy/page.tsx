@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import React from 'react';
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Read our Privacy Policy. JaldiBhejo respects your privacy and uses WebRTC peer-to-peer file sharing so files are never stored on our servers.",
+  alternates: {
+    canonical: "/privacy-policy",
+  },
+};
 
 export default function PrivacyPolicyPage() {
   return (

@@ -81,7 +81,7 @@ export default function Home() {
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "Web",
     description: "Browser-based peer-to-peer file sharing with PIN and QR code connection flows.",
-    url: "https://jaldibhejo.vercel.app",
+    url: "https://jaldibhejo.sizesnap.in",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -99,14 +99,14 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "JaldiBhejo",
-    url: "https://jaldibhejo.vercel.app",
+    url: "https://jaldibhejo.sizesnap.in",
     description: "Fast WebRTC peer-to-peer file sharing and free offline browser tools like PDF editors and image compressors.",
     publisher: {
       "@type": "Organization",
       name: "JaldiBhejo",
       logo: {
         "@type": "ImageObject",
-        url: "https://jaldibhejo.vercel.app/logo.png"
+        url: "https://jaldibhejo.sizesnap.in/logo.png"
       }
     }
   };

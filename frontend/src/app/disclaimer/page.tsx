@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import React from 'react';
+
+export const metadata: Metadata = {
+  title: "Disclaimer",
+  description: "Read the JaldiBhejo Disclaimer. Understand general information, client-side processing, peer-to-peer transfers, and tool usage terms.",
+  alternates: {
+    canonical: "/disclaimer",
+  },
+};
 
 export default function DisclaimerPage() {
   return (
