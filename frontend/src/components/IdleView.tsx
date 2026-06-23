@@ -56,7 +56,7 @@ export function IdleView() {
         {/* Sender Dropzone Panel */}
         <div 
           {...getRootProps()} 
-          className={`relative overflow-hidden glass-panel flex flex-col items-center justify-center p-8 text-center cursor-pointer min-h-[320px] transition-all duration-300 ${
+          className={`relative overflow-hidden glass-panel group flex flex-col items-center justify-center p-8 text-center cursor-pointer min-h-[320px] transition-all duration-300 ${
             isDragActive 
               ? 'border-primary bg-primary/10 scale-[1.01] ring-4 ring-primary/10' 
               : 'hover:border-primary/50'
@@ -65,7 +65,7 @@ export function IdleView() {
           <input {...getInputProps()} />
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500" />
           
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300 shadow-md ${
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300 shadow-md group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white ${
             isDragActive ? 'bg-primary text-white scale-110' : 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20'
           }`}>
             <Upload size={28} strokeWidth={2} className={isDragActive ? 'animate-bounce' : ''} />
@@ -96,10 +96,10 @@ export function IdleView() {
         </div>
 
         {/* Receiver Pin Panel */}
-        <div className="relative overflow-hidden glass-panel flex flex-col items-center justify-center p-8 text-center min-h-[320px] transition-all duration-300 hover:border-purple-500/50">
+        <div className="relative overflow-hidden glass-panel group flex flex-col items-center justify-center p-8 text-center min-h-[320px] transition-all duration-300 hover:border-purple-500/50">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500 to-pink-500" />
           
-          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-6 border border-purple-500/20 shadow-md">
+          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-6 border border-purple-500/20 shadow-md group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white transition-all duration-300">
             <Download size={28} strokeWidth={2} />
           </div>
           

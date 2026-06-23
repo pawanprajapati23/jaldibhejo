@@ -28,10 +28,10 @@ export function SiteHeader() {
     <header className="fixed top-0 w-full z-20 border-b border-border bg-background/95 backdrop-blur-md">
       <div className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-5 sm:px-6">
         <Link href="/" className="flex items-center gap-3" aria-label="JaldiBhejo home" onClick={() => setIsMenuOpen(false)}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white overflow-hidden">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white overflow-hidden shadow-sm border border-border/10">
             <Image src="/logo.png" alt="JaldiBhejo Logo" width={36} height={36} className="object-cover" />
           </div>
-          <span className="text-lg font-bold tracking-wide text-white">JaldiBhejo</span>
+          <span className="text-lg font-extrabold tracking-wide bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent hover:opacity-90 transition-opacity">JaldiBhejo</span>
         </Link>
 
         <nav className="hidden items-center gap-2 text-sm font-medium text-textMuted md:flex">
